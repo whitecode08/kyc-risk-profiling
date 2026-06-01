@@ -1,0 +1,21 @@
+# Environments
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Outputs and Reports
+output/
+validation_reports/
+
+# Sensitive Data
+examples/
+docs/
