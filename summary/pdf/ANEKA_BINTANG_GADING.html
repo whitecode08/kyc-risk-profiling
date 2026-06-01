@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYB Intelligence Report — ANEKA BINTANG GADING</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1a1a2e;
+            background: #ffffff;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        /* ─── Cover ───────────────────────────────────────────────────── */
+        .cover {
+            background: linear-gradient(135deg, #0f2045 0%, #1c3464 50%, #2962ab 100%);
+            color: white;
+            padding: 60px 40px;
+            min-height: 100vh;
+            page-break-after: always;
+            position: relative;
+        }
+        .cover::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2962ab, #5282c8, #2962ab);
+        }
+        .cover-subtitle {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: #5282c8;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .cover-title {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .cover-tagline {
+            font-size: 12px;
+            color: #5282c8;
+            margin-bottom: 30px;
+        }
+        .cover-company-box {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 18px 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .cover-company-name {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .risk-badge {
+            display: inline-block;
+            padding: 10px 30px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            width: 100%;
+        }
+        .risk-low { background: #228b22; }
+        .risk-moderate { background: #d48d13; }
+        .risk-moderate-high { background: #c25a14; }
+        .risk-high { background: #b41e1e; }
+
+        /* ─── Page Layout ─────────────────────────────────────────────── */
+        .page {
+            padding: 30px 35px;
+            page-break-after: always;
+        }
+        .page:last-child { page-break-after: avoid; }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 2px solid #0f2045;
+            margin-bottom: 20px;
+            font-size: 8px;
+            color: #0f2045;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ─── Section Cards ───────────────────────────────────────────── */
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .section-accent {
+            width: 4px;
+            height: 28px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .accent-navy { background: #0f2045; }
+        .accent-blue { background: #2962ab; }
+        .accent-red { background: #a01e1e; }
+        .accent-green { background: #1e6e50; }
+        .accent-amber { background: #8c5010; }
+
+        /* ─── Tables ──────────────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 10px;
+        }
+        thead th {
+            background: #0f2045;
+            color: white;
+            padding: 7px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e6ebf2;
+        }
+        tbody tr:nth-child(even) { background: #f8f9fc; }
+        tbody tr:nth-child(odd) { background: #eef2fa; }
+
+        /* ─── KV Rows ─────────────────────────────────────────────────── */
+        .kv-row {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .kv-key {
+            width: 200px;
+            font-weight: 600;
+            color: #3c4655;
+            font-size: 10px;
+        }
+        .kv-val {
+            flex: 1;
+            font-size: 10px;
+        }
+
+        /* ─── Score Bars ──────────────────────────────────────────────── */
+        .score-bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .score-bar-label {
+            width: 200px;
+            font-size: 10px;
+            color: #3c4655;
+        }
+        .score-bar-track {
+            flex: 1;
+            height: 14px;
+            background: #e6ebf2;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .score-bar-value {
+            width: 60px;
+            text-align: right;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .fill-aml { background: linear-gradient(90deg, #a01e1e, #d44); }
+        .fill-legal { background: linear-gradient(90deg, #8c5010, #c78030); }
+        .fill-reputation { background: linear-gradient(90deg, #1e6e50, #30a870); }
+        .fill-ownership { background: linear-gradient(90deg, #2962ab, #5282c8); }
+
+        /* ─── Finding Box ─────────────────────────────────────────────── */
+        .finding-box {
+            background: #f8f9fc;
+            border-left: 4px solid;
+            padding: 10px 14px;
+            margin: 8px 0 14px 0;
+            font-style: italic;
+            font-size: 10px;
+            color: #3c4655;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* ─── Dimension Card ──────────────────────────────────────────── */
+        .dim-header {
+            padding: 8px 14px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ─── Action Badge ────────────────────────────────────────────── */
+        .action-badge {
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        /* ─── Document Checklist ──────────────────────────────────────── */
+        .doc-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .doc-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #2962ab;
+            border-radius: 3px;
+            margin-right: 10px;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        /* ─── HCAT Badge ──────────────────────────────────────────────── */
+        .hcat-badge {
+            background: #0f2045;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: inline-block;
+            font-size: 10px;
+            margin-top: 10px;
+        }
+
+        /* ─── Footer ──────────────────────────────────────────────────── */
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #e6ebf2;
+            font-size: 8px;
+            color: #a0a8b9;
+            font-style: italic;
+        }
+
+        /* ─── Spider Web Flag Colors ──────────────────────────────────── */
+        .flag-high { color: #b41e1e; font-weight: 700; }
+        .flag-medium { color: #c25a14; font-weight: 600; }
+        .flag-low { color: #d48d13; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- COVER PAGE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-subtitle">Lembaga Jasa Keuangan &nbsp;|&nbsp; Divisi Compliance &amp; AML</div>
+    <div class="cover-title">KYB INTELLIGENCE REPORT</div>
+    <div class="cover-tagline">Know Your Business — AI-Powered Risk Profiling System</div>
+
+    <div class="cover-company-box">
+        <div class="cover-company-name">ANEKA BINTANG GADING</div>
+    </div>
+
+    
+    
+    <div class="risk-badge risk-moderate">
+        RISIKO SEDANG
+        &nbsp;·&nbsp; SKOR KONTAMINASI: 45/100
+    </div>
+
+    <div style="margin-top: 30px;">
+        <div class="section-header">
+            <div class="section-accent accent-navy"></div>
+            <div class="section-title" style="color: white;">Informasi Investigasi</div>
+        </div>
+        <div style="color: #c0c8d8;">
+            <div class="kv-row" style="border-color: rgba(255,255,255,0.1);">
+                <div class="kv-key" style="color: #8899bb;">ID Investigasi</div>
+                <div class="kv-val" style="color: white;">KYB-20240729-001</div>
+            </div>
+            <div class="kv-row" style="border-color: rgba(255,255,255,0.1);">
+                <div class="kv-key" style="color: #8899bb;">Timestamp</div>
+                <div class="kv-val" style="color: white;">2024-07-29T10:00:00Z</div>
+            </div>
+            <div class="kv-row" style="border-color: rgba(255,255,255,0.1);">
+                <div class="kv-key" style="color: #8899bb;">Nomor SK AHU</div>
+                <div class="kv-val" style="color: white;">AHU-0079977.AH.01.02.Tahun 2025</div>
+            </div>
+            <div class="kv-row" style="border-color: rgba(255,255,255,0.1);">
+                <div class="kv-key" style="color: #8899bb;">Jenis Perusahaan</div>
+                <div class="kv-val" style="color: white;">PMDN</div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="hcat-badge">
+        🛡️ HCAT Confidence: 75.1%
+    </div>
+    
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2: SCORE BREAKDOWN -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;|&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <div class="section-accent accent-blue"></div>
+            <div class="section-title">Ringkasan Skor Risiko</div>
+        </div>
+
+        
+
+        <div class="score-bar-row">
+            <div class="score-bar-label">AML & APU PPT Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-aml" style="width: 0.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #a01e1e;">0/50</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Legal & Litigation Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-legal" style="width: 0.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #8c5010;">0/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Adverse Media & Reputation</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-reputation" style="width: 100.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #1e6e50;">20/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Ownership & Industry Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-ownership" style="width: 100.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #2962ab;">25/25</div>
+        </div>
+
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #2962ab;">
+            <strong style="font-size: 13px; color: #d48d13;">
+                TOTAL SKOR KONTAMINASI: 45/100 &nbsp;→&nbsp;
+                RISIKO SEDANG
+            </strong>
+        </div>
+    </div>
+
+    <!-- Dimension Summary Table -->
+    <div class="section" style="margin-top: 24px;">
+        <div class="section-header">
+            <div class="section-accent accent-navy"></div>
+            <div class="section-title">Ringkasan Dimensi Intelligence</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Dimensi</th>
+                    <th>Sumber Data</th>
+                    <th>Kategori</th>
+                    <th>Bobot</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td>Corporate &amp; Industry Profiling</td>
+                    <td>API_AHU_KEMENKUMHAM</td>
+                    <td>Ownership and Industry Risk</td>
+                    <td style="text-align: center; font-weight: 700;">25</td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">2</td>
+                    <td>AML &amp; APU PPT</td>
+                    <td>PPATK_WATCHLIST_DB</td>
+                    <td>AML Risk</td>
+                    <td style="text-align: center; font-weight: 700;">0</td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">3</td>
+                    <td>Legal &amp; Litigation</td>
+                    <td>SIPP_MAHKAMAH_AGUNG_SCRAPER</td>
+                    <td>Legal Risk</td>
+                    <td style="text-align: center; font-weight: 700;">0</td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">4</td>
+                    <td>Adverse Media &amp; OSINT</td>
+                    <td>GOOGLE_CUSTOM_SEARCH_API</td>
+                    <td>Reputation Risk</td>
+                    <td style="text-align: center; font-weight: 700;">20</td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3+: INTELLIGENCE DIMENSIONS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;|&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <div class="section-accent accent-navy"></div>
+            <div class="section-title">Analisis Dimensi Intelligence</div>
+        </div>
+
+        
+
+        
+        <div style="margin-bottom: 20px;">
+            <div class="dim-header" style="background: #2962ab;">
+                <span>1. CORPORATE &amp; INDUSTRY PROFILING</span>
+                <span style="font-weight: 400; font-size: 9px;">Sumber: API_AHU_KEMENKUMHAM</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th>Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Company_Name</td>
+                        <td>
+                            
+                                ANEKA BINTANG GADING
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">SK_Number</td>
+                        <td>
+                            
+                                AHU-0079977.AH.01.02.Tahun 2025
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Company_Type</td>
+                        <td>
+                            
+                                PMDN NON FASILITAS
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Company_Status</td>
+                        <td>
+                            
+                                TERTUTUP
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Address</td>
+                        <td>
+                            
+                                JALAN BOULEVARD BARAT RAYA BLOK XC NOMOR 1 B, KELAPA GADING BARAT, KELAPA GADING, JAKARTA UTARA, DKI JAKARTA, 14240
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">KBLI</td>
+                        <td>
+                            
+                                56101 - RESTORAN | 56301 - BAR | 93291 - KELAB MALAM DAN ATAU DISKOTIK | 56290 - PENYEDIAAN MAKANAN LAINNYA | 93292 - KARAOKE | 93293 - USAHA ARENA PERMAINAN | 93299 - AKTIVITAS HIBURAN DAN REKREASI LAINNYA YTDL | 90001 - AKTIVITAS SENI PERTUNJUKAN | 47221 - PERDAGANGAN ECERAN MINUMAN BERALKOHOL | 47111 - PERDAGANGAN ECERAN BERBAGAI MACAM BARANG YANG UTAMANYA MAKANAN, MINUMAN ATAU TEMBAKAU DI SUPERMARKET/MINIMARKET | 47721 - PERDAGANGAN ECERAN BAHAN KIMIA | 47729 - PERDAGANGAN ECERAN LAINNYA BUKAN YANG TERCAKUP PADA KELOMPOK 47721 S.D. 47727 | 56103 - KEDAI MAKANAN
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">High_Risk_KBLI_Identified</td>
+                        <td>
+                            
+                                56301 - BAR | 93291 - KELAB MALAM DAN ATAU DISKOTIK | 93292 - KARAOKE | 93293 - USAHA ARENA PERMAINAN | 47221 - PERDAGANGAN ECERAN MINUMAN BERALKOHOL
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Shareholders_Count</td>
+                        <td>
+                            
+                                12
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Corporate_Shareholders_Count</td>
+                        <td>
+                            
+                                1
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Corporate_Shareholders_List</td>
+                        <td>
+                            
+                                PT HASTARI ADAKARA INVESTAMA
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">UBO_25_Percent_Threshold</td>
+                        <td>
+                            
+                                None identified
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #2962ab;">
+                💡 PT Aneka Bintang Gading adalah perusahaan berjenis PMDN NON FASILITAS dengan status &#39;TERTUTUP&#39; (bukan berarti tutup, melainkan PT non-Tbk). Perusahaan ini memiliki beragam KBLI, termasuk beberapa yang tergolong berisiko tinggi seperti Bar (56301), Kelab Malam dan Diskotik (93291), Karaoke (93292), Usaha Arena Permainan (93293), dan Perdagangan Eceran Minuman Beralkohol (47221). Struktur kepemilikan melibatkan 12 pemegang saham, termasuk satu entitas korporasi, PT Hastari Adakara Investama. Tidak ada pemegang saham individu yang mencapai ambang batas UBO 25% atau lebih.
+            </div>
+            
+
+            <div style="font-size: 9px; font-weight: 700; color: #2962ab;">
+                Bobot Risiko Dimensi Ini: 25 poin
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="dim-header" style="background: #a01e1e;">
+                <span>2. AML &amp; APU PPT</span>
+                <span style="font-weight: 400; font-size: 9px;">Sumber: PPATK_WATCHLIST_DB</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th>Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">DTTOT_Match</td>
+                        <td>
+                            
+                                TIDAK
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Total_Hits</td>
+                        <td>
+                            
+                                0
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Has_Active_Sanctions</td>
+                        <td>
+                            
+                                TIDAK
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #a01e1e;">
+                💡 Hasil screening PPATK DTTOT tidak menemukan adanya indikasi sanksi aktif atau daftar hitam (DTTOT) yang terkait dengan PT Aneka Bintang Gading maupun individu-individu kunci yang diperiksa.
+            </div>
+            
+
+            <div style="font-size: 9px; font-weight: 700; color: #a01e1e;">
+                Bobot Risiko Dimensi Ini: 0 poin
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="dim-header" style="background: #8c5010;">
+                <span>3. LEGAL &amp; LITIGATION</span>
+                <span style="font-weight: 400; font-size: 9px;">Sumber: SIPP_MAHKAMAH_AGUNG_SCRAPER</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th>Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Active_Cases</td>
+                        <td>
+                            
+                                0
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Litigation_Details</td>
+                        <td>
+                            
+                                
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #8c5010;">
+                💡 Tidak ditemukan adanya kasus litigasi aktif yang terdaftar di Sistem Informasi Penelusuran Perkara (SIPP) Mahkamah Agung yang melibatkan PT Aneka Bintang Gading.
+            </div>
+            
+
+            <div style="font-size: 9px; font-weight: 700; color: #8c5010;">
+                Bobot Risiko Dimensi Ini: 0 poin
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="dim-header" style="background: #1e6e50;">
+                <span>4. ADVERSE MEDIA &amp; OSINT</span>
+                <span style="font-weight: 400; font-size: 9px;">Sumber: GOOGLE_CUSTOM_SEARCH_API</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th>Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Negative_News_Count</td>
+                        <td>
+                            
+                                1
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Adverse_Media_Severity</td>
+                        <td>
+                            
+                                High
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Adverse_Media_Headline</td>
+                        <td>
+                            
+                                Kontroversi Promosi Holywings &#39;Muhammad &amp; Maria&#39; dan Konsekuensi Hukum
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">PEP_Flags_Found</td>
+                        <td>
+                            
+                                TIDAK
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Overall_Internet_Risk</td>
+                        <td>
+                            
+                                High Risk
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600; width: 200px;">Sentiment_Score</td>
+                        <td>
+                            
+                                -0.9
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #1e6e50;">
+                💡 PT Aneka Bintang Gading (melalui asosiasinya dengan Holywings Group) memiliki catatan adverse media yang signifikan dengan tingkat keparahan &#39;High&#39;. Perusahaan dan beberapa direksi/komisarisnya (Ivan Tanjaya, Eka Setia Wijaya, Marvin Saputra) terlibat dalam kontroversi promosi &#39;Muhammad &amp; Maria&#39; pada Juni 2022 yang memicu tuduhan penistaan agama, gugatan perdata, dan pencabutan izin usaha 12 gerai Holywings di Jakarta. Tidak ditemukan indikasi keterlibatan Politically Exposed Persons (PEPs) dalam kepemilikan atau manajemen perusahaan.
+            </div>
+            
+
+            <div style="font-size: 9px; font-weight: 700; color: #1e6e50;">
+                Bobot Risiko Dimensi Ini: 20 poin
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE: SPIDER WEB + RECOMMENDATION -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;|&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <!-- Spider Web -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-accent accent-navy"></div>
+            <div class="section-title">Analisis Jaringan Kontaminasi Risiko (Spider Web)</div>
+        </div>
+
+        <p style="margin-bottom: 10px; color: #3c4655;">
+            Total Jalur Kontaminasi: <strong>4</strong>
+        </p>
+
+        
+        <table>
+            <thead>
+                <tr><th>#</th><th>Nama Entitas</th><th>Tipe Koneksi</th><th>Risk Flag</th></tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td>PT HASTARI ADAKARA INVESTAMA</td>
+                    <td>Shareholder</td>
+                    <td class="flag-low">
+                        CORPORATE_UBO
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">2</td>
+                    <td>Ivan Tanjaya</td>
+                    <td>Komisaris Utama</td>
+                    <td class="flag-low">
+                        ADVERSE_MEDIA
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">3</td>
+                    <td>Eka Setia Wijaya</td>
+                    <td>Direktur Utama</td>
+                    <td class="flag-low">
+                        ADVERSE_MEDIA
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">4</td>
+                    <td>Marvin Saputra</td>
+                    <td>Direktur</td>
+                    <td class="flag-low">
+                        ADVERSE_MEDIA
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        
+    </div>
+
+    <!-- Recommendation -->
+    <div class="section" style="margin-top: 24px;">
+        <div class="section-header">
+            <div class="section-accent accent-navy"></div>
+            <div class="section-title">Rekomendasi AI</div>
+        </div>
+
+        
+        
+        
+
+        <div class="action-badge" style="background: #d48d13;">
+            SETUJUI DENGAN MONITORING
+        </div>
+
+        <div class="section-header">
+            <div class="section-accent accent-blue"></div>
+            <div class="section-title" style="font-size: 11px;">Narasi Rekomendasi</div>
+        </div>
+        <p style="color: #3c4655; margin-bottom: 14px;">Berdasarkan analisis, PT Aneka Bintang Gading memiliki tingkat risiko keseluruhan MODERATE. Risiko ini terutama didorong oleh profil industri yang mencakup KBLI berisiko tinggi (seperti bar, kelab malam, karaoke, dan penjualan minuman beralkohol) serta adanya adverse media yang signifikan terkait kontroversi promosi di masa lalu yang melibatkan perusahaan dan manajemen kuncinya. Meskipun tidak ada temuan AML/APU PPT atau litigasi aktif, riwayat reputasi yang buruk memerlukan perhatian. Oleh karena itu, direkomendasikan untuk menyetujui dengan pemantauan ketat.</p>
+
+        
+        <div class="section-header">
+            <div class="section-accent accent-blue"></div>
+            <div class="section-title" style="font-size: 11px;">Dokumen yang Diperlukan</div>
+        </div>
+        
+        <div class="doc-item">
+            <div class="doc-checkbox"></div>
+            <div>1. Dokumen legalitas perusahaan (Akta Pendirian, SK Kemenkumham terbaru)</div>
+        </div>
+        
+        <div class="doc-item">
+            <div class="doc-checkbox"></div>
+            <div>2. Daftar pemegang saham dan pengurus terbaru</div>
+        </div>
+        
+        <div class="doc-item">
+            <div class="doc-checkbox"></div>
+            <div>3. Laporan keuangan terakhir</div>
+        </div>
+        
+        <div class="doc-item">
+            <div class="doc-checkbox"></div>
+            <div>4. Izin usaha terkait KBLI berisiko tinggi (misalnya SIUP-MB)</div>
+        </div>
+        
+        <div class="doc-item">
+            <div class="doc-checkbox"></div>
+            <div>5. Rencana pemantauan transaksi dan aktivitas bisnis secara berkala</div>
+        </div>
+        
+        
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Laporan ini dihasilkan secara otomatis oleh AI-KYB Intelligence System dan bersifat CONFIDENTIAL.
+        Temuan dan rekomendasi merupakan penilaian awal berbasis data yang tersedia pada saat pemrosesan.
+        Keputusan akhir tetap menjadi kewenangan komite manajemen risiko yang berwenang.
+        <br><br>
+        ID: KYB-20240729-001 &nbsp;|&nbsp;
+        Generated: 2024-07-29T10:00:00Z &nbsp;|&nbsp;
+        Processing: 318735ms
+    </div>
+</div>
+
+</body>
+</html>

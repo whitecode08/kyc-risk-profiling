@@ -1,0 +1,101 @@
+{
+  "_comment": "Risk Weights Configuration — KYB Intelligence Pipeline v3.0",
+  "_last_updated": "2026-06-01",
+
+  "dimensions": {
+    "Ownership_and_Industry_Risk": {
+      "label": "Corporate & Industry Profiling",
+      "source_system": "API_AHU_KEMENKUMHAM",
+      "base_weight": 20,
+      "max_score": 25,
+      "description": "Risiko berdasarkan profil industri KBLI dan struktur kepemilikan"
+    },
+    "AML_Risk": {
+      "label": "AML & APU PPT",
+      "source_system": "PPATK_WATCHLIST_DB",
+      "base_weight": 40,
+      "max_score": 50,
+      "description": "Risiko pencucian uang dan pendanaan terorisme berdasarkan data PPATK"
+    },
+    "Legal_Risk": {
+      "label": "Legal & Litigation",
+      "source_system": "SIPP_MAHKAMAH_AGUNG_SCRAPER",
+      "base_weight": 15,
+      "max_score": 20,
+      "description": "Risiko hukum berdasarkan riwayat litigasi di Mahkamah Agung"
+    },
+    "Reputation_Risk": {
+      "label": "Adverse Media & OSINT",
+      "source_system": "GOOGLE_CUSTOM_SEARCH_API",
+      "base_weight": 15,
+      "max_score": 20,
+      "description": "Risiko reputasi berdasarkan adverse media dan OSINT internet"
+    }
+  },
+
+  "score_thresholds": {
+    "LOW":           { "min": 1,  "max": 25,  "action": "APPROVE",            "label": "LOW" },
+    "MODERATE":      { "min": 26, "max": 50,  "action": "APPROVE_WITH_MONITOR","label": "MODERATE" },
+    "MODERATE_HIGH": { "min": 51, "max": 75,  "action": "REQUIRE_EDD",         "label": "MODERATE-HIGH" },
+    "HIGH":          { "min": 76, "max": 100, "action": "ESCALATE_FOR_EDD",    "label": "HIGH" }
+  },
+
+  "score_adders": {
+    "ubo_above_threshold_25pct": 15,
+    "high_risk_kbli_detected": 15,
+    "corporate_shareholder_opaque": 10,
+    "str_history_detected": 20,
+    "dttot_active_sanction": 40,
+    "dttot_inactive_sanction": 20,
+    "active_litigation_perdata": 10,
+    "active_litigation_pidana": 20,
+    "bankruptcy_pkpu": 25,
+    "adverse_media_high_severity": 20,
+    "adverse_media_medium_severity": 10,
+    "pep_detected": 15,
+    "international_sanctions_ofac_un": 30,
+    "foreign_shareholder_high_risk_country": 15
+  },
+
+  "kbli_high_risk": {
+    "codes": [
+      "56301", "93291", "93292", "47221", "47222",
+      "93299", "64110", "64120", "64190", "64910",
+      "64920", "64990", "66110", "66120"
+    ],
+    "categories": {
+      "cash_intensive": ["56301", "93291", "93292", "47221"],
+      "financial_services": ["64110", "64120", "64190", "64910", "64920", "64990"],
+      "gaming_entertainment": ["93291", "93292", "93299"]
+    },
+    "labels": {
+      "56301": "BAR — Cash-Intensive, risiko TPPU tinggi",
+      "93291": "KELAB MALAM/DISKOTIK — Cash-Intensive, risiko TPPU sangat tinggi",
+      "93292": "KARAOKE — Cash-Intensive, risiko TPPU tinggi",
+      "47221": "PERDAGANGAN ECERAN MINUMAN BERALKOHOL — Cash-Intensive",
+      "64110": "BANK SENTRAL — Risiko sistemik tinggi",
+      "64120": "BANK UMUM — Sektor keuangan teregulasi ketat"
+    }
+  },
+
+  "ubo_threshold_pct": 25.0,
+
+  "connection_risk_flags": {
+    "PPATK_STR": "Riwayat Suspicious Transaction Report (TKM) di PPATK",
+    "PPATK_DTTOT": "Terdeteksi dalam Daftar DTTOT PPATK (Sanksi Keuangan Terarah)",
+    "SIPP_LITIGATION": "Terlibat perkara di Sistem Informasi Penelusuran Perkara MA",
+    "ADVERSE_MEDIA": "Terdeteksi dalam pemberitaan negatif media",
+    "PEP": "Politically Exposed Person",
+    "OFAC_SDN": "Terdeteksi dalam OFAC SDN List (Sanksi Internasional)",
+    "UN_SECURITY_COUNCIL": "Terdeteksi dalam UN Security Council Sanctions List",
+    "CORPORATE_UBO": "Pemegang saham korporasi — UBO layer kedua belum teridentifikasi"
+  },
+
+  "recommendation_actions": {
+    "APPROVE":             "Setujui — Risiko rendah, tidak diperlukan tindakan tambahan",
+    "APPROVE_WITH_MONITOR": "Setujui dengan Enhanced Monitoring — Pantau transaksi secara berkala",
+    "REQUIRE_EDD":         "Enhanced Due Diligence (EDD) Diperlukan — Kumpulkan dokumen tambahan",
+    "ESCALATE_FOR_EDD":    "Eskalasi ke Komite Manajemen Risiko — Penilaian EDD menyeluruh diperlukan",
+    "REJECT":              "Tolak — Risiko di luar toleransi, hubungan bisnis tidak dapat dilanjutkan"
+  }
+}
