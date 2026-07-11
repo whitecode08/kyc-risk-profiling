@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYB Intelligence Report — ANEKA BINTANG GADING</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+
+        :root {
+            --font-title: 'Georgia', 'Lora', serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --size-title: 16pt;
+            --size-header: 14pt;
+            --size-subheader: 12pt;
+            --size-text: 10pt;
+            
+            --color-primary: #0f172a; /* Slate 900 */
+            --color-primary-light: #1e293b; /* Slate 800 */
+            --color-accent: #d97706; /* Amber 600 */
+            --color-accent-light: #fef3c7; /* Amber 100 */
+            --color-border: #cbd5e1; /* Slate 300 */
+            --color-bg-card: #f8fafc; /* Slate 50 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            color: #1e293b;
+            background: #ffffff;
+            font-size: var(--size-text);
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ─── Cover Page ─────────────────────────────────────────────── */
+        .cover {
+            background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 40px;
+            min-height: 297mm; /* Standard A4 height */
+            height: 100vh;
+            page-break-after: always;
+            position: relative;
+            border: 15px solid #0f172a;
+        }
+        .cover-border-inner {
+            border: 1px solid rgba(217, 119, 6, 0.4);
+            height: 100%;
+            width: 100%;
+            padding: 35px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        .cover-header {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .cover-emblem {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #d97706, #b45309);
+            margin: 0 auto 15px auto;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .cover-label {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            letter-spacing: 2px;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .cover-title {
+            font-family: var(--font-title);
+            font-size: var(--size-title);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            color: #ffffff;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--color-accent);
+            padding-bottom: 12px;
+            display: inline-block;
+            width: 100%;
+        }
+        .cover-tagline {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: #94a3b8;
+            margin-top: 8px;
+            margin-bottom: 30px;
+            font-weight: 400;
+        }
+        .cover-company-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--color-accent);
+            border-radius: 6px;
+            padding: 24px;
+            text-align: left;
+            margin-bottom: 25px;
+        }
+        .cover-company-name {
+            font-family: var(--font-title);
+            font-size: var(--size-title);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .cover-company-type {
+            font-family: var(--font-body);
+            font-size: var(--size-subheader);
+            color: #94a3b8;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        .risk-badge {
+            display: block;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: var(--size-subheader);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            font-family: var(--font-body);
+        }
+        .risk-low { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; }
+        .risk-moderate { background: linear-gradient(135deg, #b45309, #eab308); color: #fff; }
+        .risk-moderate-high { background: linear-gradient(135deg, #c2410c, #f97316); color: #fff; }
+        .risk-high { background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff; }
+
+        .cover-meta {
+            margin-top: auto;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .cover-meta-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cover-meta-row:last-child {
+            border-bottom: none;
+        }
+        .cover-meta-key {
+            width: 180px;
+            font-size: var(--size-subheader);
+            color: #94a3b8;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .cover-meta-val {
+            flex: 1;
+            font-size: var(--size-text);
+            color: #e2e8f0;
+            font-weight: 500;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Page Layout ─────────────────────────────────────────────── */
+        .page {
+            padding: 40px;
+            min-height: 297mm;
+            page-break-after: always;
+            position: relative;
+        }
+        .page:last-child { page-break-after: avoid; }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--color-primary);
+            margin-bottom: 24px;
+            font-size: var(--size-header);
+            color: var(--color-primary);
+            font-weight: 700;
+            font-family: var(--font-title);
+            text-transform: uppercase;
+        }
+        .page-header span:last-child {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* ─── Section Headers ─────────────────────────────────────────── */
+        .section {
+            margin-bottom: 24px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .section-icon {
+            font-size: 16px;
+            margin-right: 8px;
+        }
+        .section-title {
+            font-family: var(--font-title);
+            font-size: var(--size-header);
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .section-subtitle {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: var(--color-text-muted);
+            margin-left: auto;
+            font-weight: 500;
+        }
+
+        /* ─── Tables ──────────────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: var(--size-text);
+        }
+        thead th {
+            background: var(--color-primary);
+            color: #ffffff;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: var(--size-subheader);
+            font-family: var(--font-body);
+            letter-spacing: 0.5px;
+        }
+        thead th:first-child { border-radius: 4px 0 0 0; }
+        thead th:last-child { border-radius: 0 4px 0 0; }
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            font-family: var(--font-body);
+        }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        tbody tr:hover { background: #f1f5f9; }
+
+        /* ─── Key-Value Pairs ─────────────────────────────────────────── */
+        .kv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .kv-row {
+            display: flex;
+            padding: 8px 12px;
+            background: var(--color-bg-card);
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .kv-key {
+            width: 150px;
+            font-weight: 700;
+            color: var(--color-primary-light);
+            font-size: var(--size-subheader);
+            font-family: var(--font-body);
+        }
+        .kv-val {
+            flex: 1;
+            font-size: var(--size-text);
+            color: #1e293b;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Score Bars ──────────────────────────────────────────────── */
+        .score-bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .score-bar-label {
+            width: 220px;
+            font-size: var(--size-subheader);
+            color: #475569;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .score-bar-track {
+            flex: 1;
+            height: 18px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .score-bar-value {
+            width: 65px;
+            text-align: right;
+            font-size: var(--size-subheader);
+            font-weight: 700;
+            margin-left: 10px;
+            font-family: var(--font-body);
+        }
+        .fill-aml { background: linear-gradient(90deg, #991b1b, #ef4444); }
+        .fill-legal { background: linear-gradient(90deg, #b45309, #f59e0b); }
+        .fill-reputation { background: linear-gradient(90deg, #0f766e, #14b8a6); }
+        .fill-ownership { background: linear-gradient(90deg, #1e3a6e, #3b82f6); }
+
+        /* ─── Finding Box ─────────────────────────────────────────────── */
+        .finding-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--color-primary);
+            padding: 12px 16px;
+            margin: 10px 0 16px 0;
+            font-size: var(--size-text);
+            color: #334155;
+            border-radius: 0 6px 6px 0;
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Dimension Card ──────────────────────────────────────────── */
+        .dim-header {
+            padding: 10px 16px;
+            border-radius: 6px 6px 0 0;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: var(--size-subheader);
+            font-family: var(--font-title);
+            margin-bottom: 0px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dim-source {
+            font-weight: 400;
+            font-size: var(--size-text);
+            opacity: 0.9;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Action Badge ────────────────────────────────────────────── */
+        .action-badge {
+            padding: 14px 24px;
+            border-radius: 6px;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: var(--size-header);
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            font-family: var(--font-body);
+            text-transform: uppercase;
+        }
+
+        /* ─── Document Checklist ──────────────────────────────────────── */
+        .doc-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: var(--size-text);
+            font-family: var(--font-body);
+        }
+        .doc-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--color-accent);
+            border-radius: 3px;
+            margin-right: 12px;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        /* ─── Mitigation List ─────────────────────────────────────────── */
+        .mitigation-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: #fffbeb;
+            border-radius: 6px;
+            border-left: 4px solid var(--color-accent);
+            font-size: var(--size-text);
+            color: #78350f;
+            font-family: var(--font-body);
+        }
+        .mitigation-num {
+            font-weight: 700;
+            margin-right: 8px;
+            color: var(--color-accent);
+            min-width: 18px;
+        }
+
+        /* ─── Spider Web Flag Colors ──────────────────────────────────── */
+        .flag-critical { color: #b91c1c; font-weight: 700; }
+        .flag-high { color: #c2410c; font-weight: 600; }
+        .flag-medium { color: #b45309; font-weight: 500; }
+
+        /* ─── Tags ────────────────────────────────────────────────────── */
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: var(--size-text);
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .tag-risk { background: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+        .tag-safe { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+        .tag-ubo { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+        .tag-corp { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+
+        /* ─── Footer ──────────────────────────────────────────────────── */
+        .footer {
+            margin-top: 30px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+            font-size: var(--size-text);
+            color: var(--color-text-muted);
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Scoring Reasoning Box ──────────────────────────────────── */
+        .reasoning-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: var(--size-text);
+            color: #78350f;
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Executive Summary Box ──────────────────────────────────── */
+        .exec-summary-box {
+            background: var(--color-bg-card);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: var(--size-text);
+            color: #334155;
+            line-height: 1.7;
+            text-align: justify;
+            font-family: var(--font-body);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- COVER PAGE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-border-inner">
+        <div class="cover-header">
+            <div class="cover-emblem">🛡️</div>
+            <div class="cover-label">Lembaga Jasa Keuangan &nbsp;·&nbsp; Divisi Compliance &amp; AML</div>
+            <div class="cover-title">KYB Intelligence Report</div>
+            <div class="cover-tagline">Know Your Business — AI-Powered Risk Profiling System v3.1</div>
+        </div>
+
+        <div class="cover-body">
+            <div class="cover-company-box">
+                <div class="cover-company-name">ANEKA BINTANG GADING</div>
+                <div class="cover-company-type">PMDN NON FASILITAS &nbsp;·&nbsp; TERTUTUP</div>
+            </div>
+
+            
+            
+            <div class="risk-badge risk-moderate-high">
+                Risiko Sedang-Tinggi
+                &nbsp;·&nbsp; Skor Kontaminasi: 55/100
+            </div>
+        </div>
+
+        <div class="cover-meta">
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">ID Investigasi</div>
+                <div class="cover-meta-val">KYB-ABG-20240729-001</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Timestamp</div>
+                <div class="cover-meta-val">2024-07-29T10:00:00.000Z</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Nomor SK AHU</div>
+                <div class="cover-meta-val">AHU-0079977.AH.01.02.Tahun 2025</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Jenis Perusahaan</div>
+                <div class="cover-meta-val">PMDN NON FASILITAS</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Jangka Waktu</div>
+                <div class="cover-meta-val">TIDAK TERBATAS</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Processing Time</div>
+                <div class="cover-meta-val">45064ms</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2: COMPANY PROFILE & KBLI -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <!-- Company Profile -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🏢</span>
+            <span class="section-title">Profil Perusahaan</span>
+            <span class="section-subtitle">Sumber: Ditjen AHU Kemenkumham</span>
+        </div>
+
+        <div class="kv-grid">
+            <div class="kv-row">
+                <div class="kv-key">Nama Perusahaan</div>
+                <div class="kv-val">ANEKA BINTANG GADING</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Nomor SK</div>
+                <div class="kv-val">AHU-0079977.AH.01.02.Tahun 2025</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Tanggal SK</div>
+                <div class="kv-val">08 Desember 2025</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Jenis Perusahaan</div>
+                <div class="kv-val">PMDN NON FASILITAS</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Status</div>
+                <div class="kv-val">TERTUTUP</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Jangka Waktu</div>
+                <div class="kv-val">TIDAK TERBATAS</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Alamat</div>
+                <div class="kv-val">JALAN BOULEVARD BARAT RAYA BLOK XC NOMOR 1 B</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Provinsi / Kab-Kota</div>
+                <div class="kv-val">DKI JAKARTA, JAKARTA UTARA</div>
+            </div>
+        </div>
+
+        <!-- Executive Summary / Business Description -->
+        
+        <div class="exec-summary-box">
+            <div style="font-weight: 700; color: var(--color-primary); margin-bottom: 6px; font-size: var(--size-subheader); text-transform: uppercase; letter-spacing: 0.5px;">
+                Executive Summary &amp; Operation Performance
+            </div>
+            <!-- Render newlines properly -->
+            
+                
+                    <p style="margin-bottom: 8px;">PT Aneka Bintang Gading adalah entitas bisnis yang beroperasi di sektor makanan, minuman, dan hiburan. Berdasarkan data AHU, perusahaan ini memiliki beragam kegiatan usaha yang mencakup restoran, bar, kelab malam, diskotik, karaoke, arena permainan, serta perdagangan eceran minuman beralkohol dan makanan. Struktur kepemilikan perusahaan menunjukkan modal dasar, ditempatkan, dan disetor masing-masing sebesar Rp 500.000.000.</p>
+                
+            
+                
+            
+                
+                    <p style="margin-bottom: 8px;">Perusahaan ini dikenal sebagai bagian dari Holywings Group, sebuah konglomerasi yang mengelola berbagai tempat hiburan dan gaya hidup terkemuka seperti Holywings dan Atlas Beach Club. Keberadaan di industri hiburan dan F&amp;B yang dinamis menunjukkan posisi yang signifikan di pasar. Meskipun demikian, beberapa kegiatan usaha yang dijalankan tergolong berisiko tinggi dari perspektif kepatuhan.</p>
+                
+            
+        </div>
+        
+
+        <!-- Stock Info -->
+        <div style="margin-top: 16px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Jenis Modal</th>
+                        <th>Jumlah Lembar</th>
+                        <th>Harga/Lembar</th>
+                        <th>Total Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Dasar</td>
+                        <td>500000000</td>
+                        <td>Rp. 1</td>
+                        <td>Rp. 500,000,000</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Ditempatkan</td>
+                        <td>500000000</td>
+                        <td>Rp. 1</td>
+                        <td>Rp. 500,000,000</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Disetor</td>
+                        <td colspan="3">Rp. 500,000,000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Company Goals (KBLI) -->
+    <div class="section" style="margin-top: 16px;">
+        <div class="section-header">
+            <span class="section-icon">📋</span>
+            <span class="section-title">Kegiatan Usaha (KBLI)</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 35px;">#</th>
+                    <th style="width: 65px;">Kode</th>
+                    <th style="width: 130px;">Nama</th>
+                    <th>Deskripsi</th>
+                    <th style="width: 60px;">Risiko</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td style="font-weight: 600;">56101</td>
+                    <td style="font-weight: 500;">RESTORAN</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup jenis usaha jasa pangan yang bertempat di sebagian atau seluruh bangunan permanen yang menjual dan...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">2</td>
+                    <td style="font-weight: 600;">56301</td>
+                    <td style="font-weight: 500;">BAR</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha yang kegiatannya menghidangkan minuman beralkohol dan nonalkohol serta makanan kecil untuk u...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-risk">HIGH</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">3</td>
+                    <td style="font-weight: 600;">93291</td>
+                    <td style="font-weight: 500;">KELAB MALAM DAN ATAU DISKOTIK</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup suatu usaha yang menyediakan tempat dan fasilitas untuk menari dengan diiringi musik hidup, atraks...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-risk">HIGH</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">4</td>
+                    <td style="font-weight: 600;">56290</td>
+                    <td style="font-weight: 500;">PENYEDIAAN MAKANAN LAINNYA</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup jasa katering yaitu jasa penyediaan makanan atas dasar kontrak perjanjian dengan pelanggan, untuk ...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">5</td>
+                    <td style="font-weight: 600;">93292</td>
+                    <td style="font-weight: 500;">KARAOKE</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup suatu usaha yang menyediakan tempat dan fasilitas untuk karaoke sebagai usaha pokok dan dapat dile...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-risk">HIGH</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">6</td>
+                    <td style="font-weight: 600;">93293</td>
+                    <td style="font-weight: 500;">USAHA ARENA PERMAINAN</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup suatu usaha yang menyediakan tempat dan fasilitas untuk permainan ketangkasan dan atau mesin perma...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">7</td>
+                    <td style="font-weight: 600;">93299</td>
+                    <td style="font-weight: 500;">AKTIVITAS HIBURAN DAN REKREASI LAINNYA YTDL</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup kegiatan hiburan dan rekreasi yang tidak tercakup dalam 93291 s.d. 93293, seperti kegiatan operasi...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-risk">HIGH</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">8</td>
+                    <td style="font-weight: 600;">90001</td>
+                    <td style="font-weight: 500;">AKTIVITAS SENI PERTUNJUKAN</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup kegiatan atau usaha menyelenggarakan pertunjukan kesenian dan hiburan panggung, seperti pertunjuka...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">9</td>
+                    <td style="font-weight: 600;">47221</td>
+                    <td style="font-weight: 500;">PERDAGANGAN ECERAN MINUMAN BERALKOHOL</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha perdagangan eceran khusus minuman beralkohol didalam bangunan yang tidak langsung diminum di...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-risk">HIGH</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">10</td>
+                    <td style="font-weight: 600;">47111</td>
+                    <td style="font-weight: 500;">PERDAGANGAN ECERAN BERBAGAI MACAM BARANG YANG UTAMANYA MAKANAN, MINUMAN ATAU TEMBAKAU DI SUPERMARKET/MINIMARKET</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha perdagangan eceran berbagai jenis barang kebutuhan yang utamanya bahan makanan/makanan, minu...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">11</td>
+                    <td style="font-weight: 600;">47721</td>
+                    <td style="font-weight: 500;">PERDAGANGAN ECERAN BAHAN KIMIA</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha perdagangan eceran khusus bahan kimia di dalam bangunan, seperti soda kostik, soda abu, kali...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">12</td>
+                    <td style="font-weight: 600;">47729</td>
+                    <td style="font-weight: 500;">PERDAGANGAN ECERAN LAINNYA BUKAN YANG TERCAKUP PADA KELOMPOK 47721 S.D. 47727</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha perdagangan eceran khusus lainnya yang belum tercakup dalam kelompok 47721 s.d. 47727, seper...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">13</td>
+                    <td style="font-weight: 600;">56103</td>
+                    <td style="font-weight: 500;">KEDAI MAKANAN</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">Kelompok ini mencakup usaha jasa pangan yang menjual dan menyajikan makanan siap dikonsumsi yang melalui proses pembuata...</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">OK</span>
+                        
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3: SHAREHOLDERS / UBO -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">👥</span>
+            <span class="section-title">Pemegang Saham & Ultimate Beneficial Owner (UBO)</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Nama</th>
+                    <th style="width: 100px;">Jabatan</th>
+                    <th style="width: 85px;">Jumlah Saham</th>
+                    <th style="width: 55px;">%</th>
+                    <th style="width: 50px;">Tipe</th>
+                    <th style="width: 50px;">UBO</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td style="font-weight: 600;">IVAN TANJAYA</td>
+                    <td>KOMISARIS UTAMA</td>
+                    <td style="text-align: right;">121,617,000</td>
+                    <td style="text-align: right; font-weight: 600;">24.32%</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">Individu</span>
+                        
+                    </td>
+                    <td style="text-align: center;">
+                        
+                        —
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">2</td>
+                    <td style="font-weight: 600;">EKA SETIA WIJAYA</td>
+                    <td>DIREKTUR UTAMA</td>
+                    <td style="text-align: right;">102,600,000</td>
+                    <td style="text-align: right; font-weight: 600;">20.52%</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">Individu</span>
+                        
+                    </td>
+                    <td style="text-align: center;">
+                        
+                        —
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">3</td>
+                    <td style="font-weight: 600;">MARVIN SAPUTRA</td>
+                    <td>DIREKTUR</td>
+                    <td style="text-align: right;">65,664,000</td>
+                    <td style="text-align: right; font-weight: 600;">13.13%</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">Individu</span>
+                        
+                    </td>
+                    <td style="text-align: center;">
+                        
+                        —
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">4</td>
+                    <td style="font-weight: 600;">JACKY LEE</td>
+                    <td>KOMISARIS</td>
+                    <td style="text-align: right;">65,664,000</td>
+                    <td style="text-align: right; font-weight: 600;">13.13%</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">Individu</span>
+                        
+                    </td>
+                    <td style="text-align: center;">
+                        
+                        —
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">5</td>
+                    <td style="font-weight: 600;">ANDREW</td>
+                    <td>-</td>
+                    <td style="text-align: right;">45,600,000</td>
+                    <td style="text-align: right; font-weight: 600;">9.12%</td>
+                    <td style="text-align: center;">
+                        
+                        <span class="tag tag-safe">Individu</span>
+                        
+                    </td>
+                    <td style="text-align: center;">
+                        
+                        —
+                        
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Score Breakdown -->
+    <div class="section" style="margin-top: 20px;">
+        <div class="section-header">
+            <span class="section-icon">📊</span>
+            <span class="section-title">Ringkasan Skor Risiko</span>
+        </div>
+
+        
+
+        <div class="score-bar-row">
+            <div class="score-bar-label">AML & APU PPT Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-aml" style="width: 0.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #dc2626;">0/50</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Legal & Litigation Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-legal" style="width: 50.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #d97706;">10/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Adverse Media & Reputation</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-reputation" style="width: 100.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #059669;">20/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Ownership & Industry Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-ownership" style="width: 100.0%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #2563eb;">25/25</div>
+        </div>
+
+        <div style="margin-top: 10px; padding: 10px 14px; border-radius: 6px; background: #fff7ed; border: 1px solid #fed7aa;">
+            <strong style="font-size: var(--size-subheader); color: #9a3412;">
+                TOTAL SKOR: 55/100 &nbsp;→&nbsp;
+                RISIKO SEDANG-TINGGI
+            </strong>
+        </div>
+
+        
+        <div class="reasoning-box">
+            <strong>📝 Reasoning:</strong> Penentuan skor risiko didasarkan pada analisis komprehensif dari empat dimensi utama: Corporate &amp; Industry Profiling, AML &amp; APU PPT, Legal &amp; Litigation, dan Adverse Media &amp; OSINT.
+
+1.  **Corporate &amp; Industry Profiling (Skor: 25)**: Skor ini diberikan karena adanya beberapa faktor risiko terkait profil perusahaan dan industrinya. Perusahaan ini memiliki 5 KBLI yang tergolong berisiko tinggi (56301 BAR, 93291 KELAB MALAM DAN ATAU DISKOTIK, 93292 KARAOKE, 93299 AKTIVITAS HIBURAN DAN REKREASI LAINNYA YTDL, 47221 PERDAGANGAN ECERAN MINUMAN BERALKOHOL), yang berkontribusi +15 poin (`high_risk_kbli_detected`). Selain itu, keberadaan satu pemegang saham korporasi (PT Hastari Adakara Investama) tanpa informasi kepemilikan yang lebih transparan menambah +15 poin (`corporate_shareholder_opaque`). Total skor untuk dimensi ini adalah 30, namun dibatasi pada nilai maksimum 25.
+
+2.  **AML &amp; APU PPT (Skor: 0)**: Tidak ada skor yang ditambahkan pada dimensi ini karena hasil screening PPATK DTTOT menunjukkan 0 hit dan tidak ada sanksi aktif yang teridentifikasi.
+
+3.  **Legal &amp; Litigation (Skor: 10)**: Skor ini diberikan karena adanya satu perkara litigasi aktif yang tercatat di SIPP Mahkamah Agung. Perkara merek ini tergolong sebagai litigasi perdata, yang berkontribusi +10 poin (`active_litigation_perdata`).
+
+4.  **Adverse Media &amp; OSINT (Skor: 20)**: Meskipun perusahaan secara langsung tidak memiliki catatan media negatif, salah satu pemegang saham utama dan Komisaris Utama, Ivan Tanjaya, memiliki catatan media negatif yang signifikan terkait skandal promosi Holywings yang berujung pada penistaan agama. Kejadian ini dikategorikan sebagai `adverse_media_high_severity`, sehingga menambah +20 poin. Tidak ada indikasi PEP yang ditemukan.
+        </div>
+        
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 4: INTELLIGENCE DIMENSIONS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🔍</span>
+            <span class="section-title">Analisis Dimensi Intelligence</span>
+        </div>
+
+        
+
+        
+        <div style="margin-bottom: 16px;">
+            <div class="dim-header" style="background: #1e3a6e;">
+                <span>1. CORPORATE &amp; INDUSTRY PROFILING</span>
+                <span class="dim-source">Ditjen AHU &nbsp;·&nbsp; Bobot: 25 poin</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th style="width: 180px;">Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">company_type</td>
+                        <td>
+                            
+                                PMDN NON FASILITAS
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">status</td>
+                        <td>
+                            
+                                TERTUTUP
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">paid_up_stock</td>
+                        <td>
+                            
+                                Rp. 500,000,000
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">high_risk_kbli_count</td>
+                        <td>
+                            
+                                5
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">ubo_count</td>
+                        <td>
+                            
+                                0
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">corporate_shareholders_count</td>
+                        <td>
+                            
+                                1
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #1e3a6e;">
+                PT Aneka Bintang Gading adalah perusahaan Penanaman Modal Dalam Negeri (PMDN) dengan status &#39;TERTUTUP&#39; (PT Tertutup). Modal disetor perusahaan sebesar Rp 500.000.000. Perusahaan ini memiliki 5 KBLI yang tergolong berisiko tinggi, termasuk bar, kelab malam, diskotik, karaoke, aktivitas hiburan dan rekreasi lainnya, serta perdagangan eceran minuman beralkohol. Tidak ada Pemilik Manfaat Akhir (UBO) yang teridentifikasi memiliki kepemilikan saham 25% atau lebih. Terdapat satu pemegang saham korporasi, PT Hastari Adakara Investama.
+            </div>
+            
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+            <div class="dim-header" style="background: #991b1b;">
+                <span>2. AML &amp; APU PPT</span>
+                <span class="dim-source">PPATK DTTOT &nbsp;·&nbsp; Bobot: 0 poin</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th style="width: 180px;">Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">dttot_total_hits</td>
+                        <td>
+                            
+                                0
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">dttot_has_active_sanctions</td>
+                        <td>
+                            
+                                <span class="tag tag-safe">TIDAK</span>
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #991b1b;">
+                Hasil pemeriksaan terhadap daftar terduga teroris dan organisasi teroris (DTTOT) PPATK tidak menemukan adanya indikasi keterlibatan PT Aneka Bintang Gading maupun pemegang saham utamanya dalam daftar sanksi aktif.
+            </div>
+            
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+            <div class="dim-header" style="background: #92400e;">
+                <span>3. LEGAL &amp; LITIGATION</span>
+                <span class="dim-source">SIPP Mahkamah Agung &nbsp;·&nbsp; Bobot: 10 poin</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th style="width: 180px;">Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">total_cases</td>
+                        <td>
+                            
+                                1
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">active_litigation_count</td>
+                        <td>
+                            
+                                1
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">litigation_types</td>
+                        <td>
+                            
+                                Merek (Perdata)
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #92400e;">
+                PT Aneka Bintang Gading tercatat memiliki satu perkara litigasi aktif di SIPP Mahkamah Agung. Perkara tersebut adalah gugatan merek dengan nomor 77/Pdt.Sus-HKI/Merek/2026/PN Niaga Jkt.Pst di PN Niaga Jakarta Pusat, di mana perusahaan ini berstatus sebagai Termohon. Perkara ini tergolong sebagai litigasi perdata.
+            </div>
+            
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+            <div class="dim-header" style="background: #065f46;">
+                <span>4. ADVERSE MEDIA &amp; OSINT</span>
+                <span class="dim-source">Internet Research (OSINT) &nbsp;·&nbsp; Bobot: 20 poin</span>
+            </div>
+
+            
+            <table>
+                <thead>
+                    <tr><th style="width: 180px;">Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">overall_internet_risk_company</td>
+                        <td>
+                            
+                                Clean
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">adverse_media_company</td>
+                        <td>
+                            
+                                
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">adverse_media_ubo</td>
+                        <td>
+                            
+                                IVAN TANJAYA: Skandal Promosi Holywings (Penistaan Agama)
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">pep_flags_company</td>
+                        <td>
+                            
+                                
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="font-weight: 600;">pep_flags_ubo</td>
+                        <td>
+                            
+                                
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+
+            
+            <div class="finding-box" style="border-color: #065f46;">
+                Riset internet (OSINT) untuk PT Aneka Bintang Gading secara langsung menunjukkan profil &#39;Clean&#39; tanpa adanya berita negatif atau sanksi yang teridentifikasi. Namun, salah satu pemegang saham dan Komisaris Utama, Ivan Tanjaya, memiliki catatan media negatif yang signifikan terkait skandal promosi Holywings (penistaan agama) pada tahun 2022. Skandal ini memicu kemarahan publik dan berujung pada penutupan beberapa gerai Holywings serta proses hukum terhadap pihak terkait. Tidak ada indikasi PEP yang ditemukan.
+            </div>
+            
+        </div>
+        
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 5: SPIDER WEB + RECOMMENDATION + MITIGATION -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>ANEKA BINTANG GADING</span>
+    </div>
+
+    <!-- Spider Web -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🕸️</span>
+            <span class="section-title">Analisis Jaringan Kontaminasi (Spider Web)</span>
+        </div>
+
+        <p style="margin-bottom: 8px; color: #475569; font-size: var(--size-text);">
+            Total Jalur Kontaminasi: <strong>2</strong>
+        </p>
+
+        
+        <table>
+            <thead>
+                <tr><th style="width: 30px;">#</th><th>Nama Entitas</th><th>Tipe Koneksi</th><th>Risk Flag</th></tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td style="font-weight: 600;">PT HASTARI ADAKARA INVESTAMA</td>
+                    <td>Shareholder</td>
+                    <td class="flag-medium">
+                        CORPORATE_UBO
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="text-align: center;">2</td>
+                    <td style="font-weight: 600;">IVAN TANJAYA</td>
+                    <td>Shareholder</td>
+                    <td class="flag-medium">
+                        ADVERSE_MEDIA
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        
+    </div>
+
+    <!-- Recommendation -->
+    <div class="section" style="margin-top: 20px;">
+        <div class="section-header">
+            <span class="section-icon">✅</span>
+            <span class="section-title">Rekomendasi & Mitigasi Risiko</span>
+        </div>
+
+        
+        
+        
+
+        <div class="action-badge" style="background: linear-gradient(135deg, #9a3412, #f97316);">
+            ENHANCED DUE DILIGENCE DIPERLUKAN
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 4px;">Narasi Rekomendasi</div>
+            <p style="color: #475569; font-size: var(--size-text); line-height: 1.65;">Mengingat tingkat risiko keseluruhan yang berada pada kategori MODERATE-HIGH, diperlukan proses Due Diligence yang Diperketat (Enhanced Due Diligence/EDD) untuk PT Aneka Bintang Gading. Hal ini terutama disebabkan oleh keberadaan KBLI berisiko tinggi, adanya pemegang saham korporasi, litigasi aktif, serta catatan media negatif signifikan yang terkait dengan salah satu pemegang saham utama dan Komisaris Utama perusahaan.</p>
+        </div>
+
+        
+        <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 6px;">Langkah Mitigasi Risiko</div>
+            
+            <div class="mitigation-item">
+                <span class="mitigation-num">1.</span>
+                <span>Melakukan verifikasi mendalam terhadap struktur kepemilikan PT Hastari Adakara Investama untuk mengidentifikasi UBO akhir dan memastikan tidak ada risiko tersembunyi.</span>
+            </div>
+            
+            <div class="mitigation-item">
+                <span class="mitigation-num">2.</span>
+                <span>Meminta klarifikasi dan dokumentasi lengkap mengenai status dan potensi dampak dari perkara litigasi merek yang sedang berjalan.</span>
+            </div>
+            
+            <div class="mitigation-item">
+                <span class="mitigation-num">3.</span>
+                <span>Mengevaluasi kebijakan dan prosedur internal perusahaan terkait pemasaran dan promosi, terutama untuk produk beralkohol, guna mencegah terulangnya insiden serupa dengan skandal Holywings.</span>
+            </div>
+            
+            <div class="mitigation-item">
+                <span class="mitigation-num">4.</span>
+                <span>Menerapkan pemantauan transaksi yang diperketat (Enhanced Transaction Monitoring) untuk aktivitas yang terkait dengan KBLI berisiko tinggi.</span>
+            </div>
+            
+            <div class="mitigation-item">
+                <span class="mitigation-num">5.</span>
+                <span>Memastikan perusahaan memiliki lisensi dan izin yang lengkap serta mematuhi semua regulasi terkait operasional bar, kelab malam, dan penjualan minuman beralkohol.</span>
+            </div>
+            
+        </div>
+        
+
+        
+        <div>
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 6px;">Dokumen yang Diperlukan</div>
+            
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>1. Laporan Keuangan Audited 3 tahun terakhir</div>
+            </div>
+            
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>2. Struktur kepemilikan hingga UBO akhir untuk PT Hastari Adakara Investama</div>
+            </div>
+            
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>3. Penjelasan resmi perusahaan mengenai status dan dampak litigasi merek</div>
+            </div>
+            
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>4. Penjelasan resmi dari Ivan Tanjaya terkait skandal promosi Holywings dan langkah mitigasi yang telah diambil</div>
+            </div>
+            
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>5. Bukti kepatuhan terhadap regulasi terkait penjualan minuman beralkohol dan operasional tempat hiburan</div>
+            </div>
+            
+        </div>
+        
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Laporan ini dihasilkan secara otomatis oleh AI-KYB Intelligence System v3.1 dan bersifat <strong>CONFIDENTIAL</strong>.
+        Temuan dan rekomendasi merupakan penilaian awal berbasis data yang tersedia pada saat pemrosesan.
+        Keputusan akhir tetap menjadi kewenangan komite manajemen risiko yang berwenang.
+        <br><br>
+        ID: KYB-ABG-20240729-001 &nbsp;·&nbsp;
+        Generated: 2024-07-29T10:00:00.000Z &nbsp;·&nbsp;
+        Processing: 45064ms
+    </div>
+</div>
+
+</body>
+</html>

@@ -9,12 +9,19 @@ Phase 4 dari KYB Pipeline (otak utama proyek):
                   dan justifikasi skor.
 
 Output: KYBInvestigationOutput (final_summary.json)
+
+Prompt Engineering Notes (v3.1):
+- Uses explanation-first sequencing (reasoning BEFORE scoring)
+- Uses Pydantic response_schema enforcement via Gemini API
+- Uses enum constraints for categorical fields
+- Guardrails calibrated per FATF RBA, POJK 8/2023, PPATK NRA 2023
 """
 
 import json
 import time
 from datetime import datetime, timezone
 from typing import List, Optional, Union
+from enum import Enum
 
 from pydantic import BaseModel, Field
 from google import genai
@@ -29,22 +36,81 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Pydantic Models — KYB Investigation Output (sesuai ref_output.json)
+# Pydantic Models — KYB Investigation Output (v3.1)
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Company Profile ──────────────────────────────────────────────────────────
+
+class StockInfo(BaseModel):
+    classification: str = Field(default="", description="Klasifikasi saham")
+    price_per_share: str = Field(default="", description="Harga per lembar saham")
+    number_of_shares: str = Field(default="", description="Jumlah lembar saham")
+    grand_total: str = Field(default="", description="Total nilai saham")
+
+
+class CompanyProfile(BaseModel):
+    """Profil lengkap perusahaan dari data AHU."""
+    name: str = Field(description="Nama perusahaan")
+    sk_number: str = Field(default="", description="Nomor SK AHU")
+    sk_date: str = Field(default="", description="Tanggal SK")
+    company_type: str = Field(default="", description="Jenis perusahaan (PMDN/PMA)")
+    status: str = Field(default="", description="Status badan hukum (TERTUTUP = PT Tertutup, BUKAN tutup)")
+    time_period: str = Field(default="", description="Jangka waktu perusahaan")
+    transaction_type: str = Field(default="", description="Jenis transaksi terakhir")
+    address: str = Field(default="", description="Alamat lengkap")
+    province: str = Field(default="", description="Provinsi")
+    regency: str = Field(default="", description="Kabupaten/Kota")
+    base_stock: StockInfo = Field(default_factory=StockInfo, description="Modal dasar")
+    issued_stock: StockInfo = Field(default_factory=StockInfo, description="Modal ditempatkan")
+    paid_up_stock: str = Field(default="", description="Modal disetor")
+    business_description: str = Field(
+        default="", 
+        description="Executive summary / deskripsi bisnis naratif (2-3 paragraf) yang merangkum latar belakang, operasional, dan performa perusahaan berdasarkan data AHU dan OSINT."
+    )
+
+
+# ─── Company Goals (KBLI) ────────────────────────────────────────────────────
+
+class CompanyGoal(BaseModel):
+    no: int = Field(description="Nomor urut")
+    code: str = Field(description="Kode KBLI")
+    name: str = Field(description="Nama kegiatan usaha")
+    description: str = Field(default="", description="Deskripsi kegiatan usaha")
+    is_high_risk: bool = Field(default=False, description="Apakah KBLI termasuk high-risk (cash-intensive, TBML, etc.)")
+
+
+# ─── Shareholders / UBO ──────────────────────────────────────────────────────
+
+class ShareholderUBO(BaseModel):
+    name: str = Field(description="Nama pemegang saham")
+    position: str = Field(default="-", description="Jabatan")
+    number_of_shares: int = Field(default=0, description="Jumlah lembar saham")
+    percentage: float = Field(default=0.0, description="Persentase kepemilikan")
+    address: str = Field(default="", description="Alamat")
+    country: str = Field(default="Indonesia", description="Negara")
+    is_corporate: bool = Field(default=False, description="Apakah pemegang saham badan hukum (PT)")
+    is_ubo: bool = Field(default=False, description="Apakah termasuk UBO (>=25%)")
+
+
+# ─── Intelligence Data ───────────────────────────────────────────────────────
 
 class IntelligenceDataPoint(BaseModel):
     attribute: str = Field(description="Nama atribut")
-    value: Union[str, bool, int, float, List[str], List[dict], dict, type(None)] = Field(description="Nilai atribut")
+    value: Union[str, bool, int, float, List[str], List[dict], dict, None] = Field(
+        description="Nilai atribut"
+    )
 
 
 class IntelligenceDimension(BaseModel):
     dimension: str = Field(description="Nama dimensi analisis")
     source_system: str = Field(description="Sistem sumber data")
     data_points: List[IntelligenceDataPoint] = Field(default_factory=list)
-    finding: str = Field(description="Narasi temuan dimensi")
+    finding: str = Field(description="Narasi temuan dimensi dalam Bahasa Indonesia")
     risk_weight: int = Field(description="Bobot kontribusi (0-50)")
-    category: str = Field(description="Kategori risiko")
+    category: str = Field(description="Kategori risiko: Ownership_and_Industry_Risk|AML_Risk|Legal_Risk|Reputation_Risk")
 
+
+# ─── Risk Scoring ────────────────────────────────────────────────────────────
 
 class ScoreBreakdown(BaseModel):
     aml_risk: int = Field(default=0, description="Skor AML (0-50)")
@@ -54,15 +120,30 @@ class ScoreBreakdown(BaseModel):
 
 
 class AIRiskScoring(BaseModel):
-    overall_risk_level: str = Field(description="LOW/MODERATE/MODERATE-HIGH/HIGH")
+    overall_risk_level: str = Field(
+        description="Tingkat risiko: LOW|MODERATE|MODERATE-HIGH|HIGH"
+    )
     risk_contamination_score: int = Field(description="Skor 0-100")
     score_breakdown: ScoreBreakdown = Field(default_factory=ScoreBreakdown)
+    scoring_reasoning: str = Field(
+        default="",
+        description="Penjelasan detail MENGAPA setiap komponen skor diberikan nilai tersebut. "
+                    "Harus menjelaskan faktor apa yang menambah/mengurangi skor per dimensi."
+    )
 
+
+# ─── Spider Web Analysis ─────────────────────────────────────────────────────
 
 class ProblematicEntity(BaseModel):
     entity_name: str
-    connection_type: str = Field(description="Directorship/Shareholder/Beneficiary/Associate")
-    risk_flag: str = Field(description="PPATK_STR/PPATK_DTTOT/SIPP_LITIGATION/PEP/ADVERSE_MEDIA/CORPORATE_UBO")
+    connection_type: str = Field(
+        description="Tipe koneksi: Directorship|Shareholder|Beneficiary|Associate"
+    )
+    risk_flag: str = Field(
+        description="Flag risiko: PPATK_STR|PPATK_DTTOT|SIPP_LITIGATION|PEP|ADVERSE_MEDIA|"
+                    "CORPORATE_UBO|OFAC_SDN|UN_SECURITY_COUNCIL|NOMINEE_SHAREHOLDER|"
+                    "SHELL_COMPANY|TBML_SECTOR|HIGH_RISK_GEOGRAPHY"
+    )
 
 
 class SpiderWebAnalysis(BaseModel):
@@ -70,11 +151,21 @@ class SpiderWebAnalysis(BaseModel):
     problematic_entities_connected: List[ProblematicEntity] = Field(default_factory=list)
 
 
-class AIRecommendation(BaseModel):
-    action: str = Field(description="APPROVE/APPROVE_WITH_MONITOR/REQUIRE_EDD/ESCALATE_FOR_EDD/REJECT")
-    narrative: str = Field(description="Narasi Bahasa Indonesia")
-    required_documents: List[str] = Field(default_factory=list)
+# ─── AI Recommendation ───────────────────────────────────────────────────────
 
+class AIRecommendation(BaseModel):
+    action: str = Field(
+        description="Aksi rekomendasi: APPROVE|APPROVE_WITH_MONITOR|REQUIRE_EDD|ESCALATE_FOR_EDD|REJECT"
+    )
+    narrative: str = Field(description="Narasi rekomendasi dalam Bahasa Indonesia")
+    required_documents: List[str] = Field(default_factory=list)
+    risk_mitigation: List[str] = Field(
+        default_factory=list,
+        description="Langkah-langkah mitigasi risiko yang disarankan dalam Bahasa Indonesia"
+    )
+
+
+# ─── Metadata ─────────────────────────────────────────────────────────────────
 
 class CorporateEntity(BaseModel):
     name: str
@@ -89,10 +180,15 @@ class InvestigationMetadata(BaseModel):
     status: str = "COMPLETED"
 
 
+# ─── Final Output ─────────────────────────────────────────────────────────────
+
 class KYBInvestigationOutput(BaseModel):
-    """Model output final KYB Investigation — sesuai ref_output.json."""
+    """Model output final KYB Investigation v3.1 — diperluas dengan profil, KBLI, UBO."""
     metadata: InvestigationMetadata
     corporate_entity: CorporateEntity
+    company_profile: CompanyProfile
+    company_goals: List[CompanyGoal] = Field(default_factory=list)
+    shareholders_ubo: List[ShareholderUBO] = Field(default_factory=list)
     ai_risk_scoring: AIRiskScoring
     intelligence_data: List[IntelligenceDimension] = Field(default_factory=list)
     spider_web_analysis: SpiderWebAnalysis = Field(default_factory=SpiderWebAnalysis)
@@ -101,8 +197,8 @@ class KYBInvestigationOutput(BaseModel):
 
 class CriticFeedback(BaseModel):
     """Feedback dari AI Critic."""
-    is_valid: bool = Field(description="True jika memenuhi guardrails")
-    feedback: str = Field(description="Detail kritik/koreksi")
+    is_valid: bool = Field(description="True jika memenuhi semua guardrails")
+    feedback: str = Field(description="Detail kritik/koreksi jika is_valid=false, atau konfirmasi jika true")
     missing_fields: List[str] = Field(default_factory=list)
 
 
@@ -110,20 +206,15 @@ class CriticFeedback(BaseModel):
 # AI Researcher
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def ai_researcher(ahu_data: dict, ppatk_summary: dict,
-                  sipp_cases: list, osint_result: dict,
-                  start_time_ms: int = 0,
-                  revision_feedback: str = "",
-                  missing_fields: list = None) -> KYBInvestigationOutput:
-    """
-    AI Researcher: Membaca 4 sumber JSON sekaligus dan merangkum
-    narasi komprehensif → KYBInvestigationOutput.
-
-    Framework: "AI Researcher bertugas membaca 4 file JSON sekaligus
-    (AHU, PPATK, SIPP Scraped, OSINT). AI ini merangkum narasi
-    komprehensif terkait kondisi nasabah."
-    """
-    print(f"\n   🔬 AI Researcher: Menyusun narasi dari 4 sumber data...")
+def _build_researcher_prompt(
+    ahu_data: dict,
+    ppatk_summary: dict,
+    sipp_cases: list,
+    osint_result: dict,
+    revision_feedback: str = "",
+    missing_fields: list = None,
+) -> str:
+    """Build the AI Researcher prompt with explanation-first sequencing."""
 
     # Prepare contexts
     ahu_context = json.dumps(ahu_data, ensure_ascii=False)
@@ -145,120 +236,118 @@ def ai_researcher(ahu_data: dict, ppatk_summary: dict,
     except (ValueError, AttributeError):
         paid_up_capital = 500_000_000
 
-    prompt = f"""
-Anda adalah analis KYB (Know Your Business) senior di divisi Compliance & AML.
-Analisis data perusahaan dari 4 sumber berikut dan hasilkan KYB Intelligence Report.
+    # Build score adders reference
+    adders_ref = "\n".join(
+        f"  - {k}: +{v}" for k, v in score_adders.items()
+        if not k.startswith("_")
+    )
 
-=== 1. DATA PROFIL PERUSAHAAN (Ditjen AHU) ===
+    prompt = f"""
+### PERSONA
+Anda adalah Senior KYB/AML Compliance Analyst di divisi Manajemen Risiko sebuah Lembaga Jasa Keuangan.
+Anda bertugas membuat laporan investigasi KYB (Know Your Business) yang komprehensif dan akurat.
+
+### DATA SUMBER (GROUND TRUTH)
+Gunakan HANYA data berikut. JANGAN menambahkan informasi yang tidak ada di data ini.
+
+=== 1. PROFIL PERUSAHAAN (Ditjen AHU) ===
 {ahu_context}
 
 === 2. SCREENING PPATK DTTOT ===
 {ppatk_context}
 
-=== 3. DATA LITIGASI (SIPP MA) ===
+=== 3. DATA LITIGASI (SIPP Mahkamah Agung) ===
 {sipp_context}
 
 === 4. HASIL RISET INTERNET (OSINT) ===
 {osint_context}
 
-=== KONFIGURASI BOBOT RISIKO ===
-- Ownership_and_Industry_Risk: max {dim_weights.get('Ownership_and_Industry_Risk', {}).get('max_score', 25)}
-- AML_Risk: max {dim_weights.get('AML_Risk', {}).get('max_score', 50)}
-- Legal_Risk: max {dim_weights.get('Legal_Risk', {}).get('max_score', 20)}
-- Reputation_Risk: max {dim_weights.get('Reputation_Risk', {}).get('max_score', 20)}
+### INSTRUKSI ANALISIS (STEP-BY-STEP)
 
-Score adders:
-- UBO >=25%: +{score_adders.get('ubo_above_threshold_25pct', 15)}
-- KBLI High Risk ({', '.join(kbli_high_risk[:5])}...): +{score_adders.get('high_risk_kbli_detected', 15)}
-- Corporate shareholder opaque: +{score_adders.get('corporate_shareholder_opaque', 10)}
-- STR history: +{score_adders.get('str_history_detected', 20)}
-- DTTOT aktif: +{score_adders.get('dttot_active_sanction', 40)}
-- Litigasi perdata: +{score_adders.get('active_litigation_perdata', 10)}
-- Adverse media High: +{score_adders.get('adverse_media_high_severity', 20)}
-- PEP: +{score_adders.get('pep_detected', 15)}
+**Langkah 1 — Ekstrak Profil Perusahaan & Executive Summary:**
+- Salin data profil dari AHU JSON ke company_profile, termasuk baseStock, issuedStock, paidUpStock.
+- Tuliskan `business_description` (2-3 paragraf) yang merangkum secara profesional narasi tentang perusahaan ini (bidang usaha utama, posisi di pasar, sekilas performa atau background berdasarkan data OSINT dan KBLI). Gunakan bahasa bisnis yang formal.
+- PENTING: Status "TERTUTUP" = PT Tertutup (bukan Tbk), BUKAN berarti perusahaan tutup/bangkrut. JANGAN jadikan ini sebagai faktor risiko.
 
-=== OUTPUT JSON (HARUS PERSIS) ===
-{{
-  "metadata": {{
-    "investigation_id": "KYB-YYYYMMDD-NNN",
-    "timestamp": "ISO8601 UTC",
-    "processing_time_ms": 0,
-    "status": "COMPLETED"
-  }},
-  "corporate_entity": {{
-    "name": "NAMA PERUSAHAAN",
-    "sk_number": "nomor SK",
-    "company_type": "PMDN/PMA"
-  }},
-  "ai_risk_scoring": {{
-    "overall_risk_level": "LOW|MODERATE|MODERATE-HIGH|HIGH",
-    "risk_contamination_score": 0,
-    "score_breakdown": {{
-      "aml_risk": 0,
-      "legal_risk": 0,
-      "reputation_risk": 0,
-      "ownership_risk": 0
-    }}
-  }},
-  "intelligence_data": [
-    {{
-      "dimension": "Corporate & Industry Profiling",
-      "source_system": "API_AHU_KEMENKUMHAM",
-      "data_points": [{{"attribute": "KBLI", "value": ["kode - nama"]}}, ...],
-      "finding": "narasi temuan",
-      "risk_weight": 0,
-      "category": "Ownership_and_Industry_Risk"
-    }},
-    {{
-      "dimension": "AML & APU PPT",
-      "source_system": "PPATK_WATCHLIST_DB",
-      "data_points": [{{"attribute": "DTTOT_Match", "value": false}}, ...],
-      "finding": "narasi",
-      "risk_weight": 0,
-      "category": "AML_Risk"
-    }},
-    {{
-      "dimension": "Legal & Litigation",
-      "source_system": "SIPP_MAHKAMAH_AGUNG_SCRAPER",
-      "data_points": [{{"attribute": "Active_Cases", "value": "..."}}],
-      "finding": "narasi",
-      "risk_weight": 0,
-      "category": "Legal_Risk"
-    }},
-    {{
-      "dimension": "Adverse Media & OSINT",
-      "source_system": "GOOGLE_CUSTOM_SEARCH_API",
-      "data_points": [{{"attribute": "Negative_News_Count", "value": 0}}],
-      "finding": "narasi",
-      "risk_weight": 0,
-      "category": "Reputation_Risk"
-    }}
-  ],
-  "spider_web_analysis": {{
-    "total_contamination_paths": 0,
-    "problematic_entities_connected": [
-      {{"entity_name": "nama", "connection_type": "...", "risk_flag": "..."}}
-    ]
-  }},
-  "ai_recommendation": {{
-    "action": "APPROVE|APPROVE_WITH_MONITOR|REQUIRE_EDD|ESCALATE_FOR_EDD|REJECT",
-    "narrative": "narasi Bahasa Indonesia",
-    "required_documents": ["dokumen"]
-  }}
-}}
+**Langkah 2 — Ekstrak KBLI (company_goals):**
+Salin semua kegiatan usaha dari companyGoals. Tandai is_high_risk=true jika kode KBLI termasuk dalam: {', '.join(kbli_high_risk[:10])}
 
-=== ATURAN PENTING ===
-1. UBO: hitung persentase = (numberOfShares / {paid_up_capital}) * 100
-2. Status TERTUTUP = PT Tertutup (bukan Tbk), BUKAN tutup. JANGAN jadikan risiko.
-3. PPATK: jika has_active_sanctions=true → AML risk_weight WAJIB >= 40
-4. risk_contamination_score = sum(score_breakdown)
-5. 1-25=LOW, 26-50=MODERATE, 51-75=MODERATE-HIGH, 76-100=HIGH
-6. Pemegang saham PT (korporasi) → WAJIB spider_web dengan flag CORPORATE_UBO
-7. LOW→APPROVE, MODERATE→APPROVE_WITH_MONITOR, MODERATE-HIGH→REQUIRE_EDD, HIGH→ESCALATE_FOR_EDD
+**Langkah 3 — Ekstrak Shareholders/UBO:**
+- Hitung persentase = (numberOfShares / {paid_up_capital}) × 100
+- Tandai is_ubo=true jika persentase >= 25%
+- Tandai is_corporate=true jika nama dimulai dengan "PT "
+- Urutkan dari persentase terbesar, ambil top 5
 
-{f"CATATAN REVISI: {revision_feedback}" if revision_feedback else ""}
-{f"FIELD BERMASALAH: {', '.join(missing_fields)}" if missing_fields else ""}
+**Langkah 4 — Analisis 4 Dimensi Risiko:**
+Buat intelligence_data dengan TEPAT 4 dimensi:
+
+  1. "Corporate & Industry Profiling" (category: Ownership_and_Industry_Risk, max: {dim_weights.get('Ownership_and_Industry_Risk', {}).get('max_score', 25)})
+     - Analisis KBLI, struktur kepemilikan, transparansi UBO
+  2. "AML & APU PPT" (category: AML_Risk, max: {dim_weights.get('AML_Risk', {}).get('max_score', 50)})
+     - Analisis PPATK DTTOT hits, STR history, sanksi internasional
+  3. "Legal & Litigation" (category: Legal_Risk, max: {dim_weights.get('Legal_Risk', {}).get('max_score', 20)})
+     - Analisis perkara SIPP: kepailitan, PKPU, perdata, pidana
+  4. "Adverse Media & OSINT" (category: Reputation_Risk, max: {dim_weights.get('Reputation_Risk', {}).get('max_score', 20)})
+     - Analisis adverse media, PEP, reputasi internet
+
+**Langkah 5 — Hitung Skor Risiko (EXPLANATION FIRST):**
+SEBELUM menentukan angka skor, TULISKAN reasoning terlebih dahulu di field scoring_reasoning:
+  a. Identifikasi setiap faktor risiko yang ditemukan dari data
+  b. Tentukan skor per dimensi berdasarkan faktor yang ditemukan
+  c. Jumlahkan: risk_contamination_score = aml_risk + legal_risk + reputation_risk + ownership_risk
+  d. Cap pada 100 jika total melebihi 100
+  e. Tentukan level: 1-25=LOW, 26-50=MODERATE, 51-75=MODERATE-HIGH, 76-100=HIGH
+
+Score adders reference:
+{adders_ref}
+
+**Langkah 6 — Spider Web Analysis:**
+- Identifikasi entitas bermasalah yang terhubung dengan perusahaan
+- total_contamination_paths = jumlah problematic_entities_connected
+- Pemegang saham korporasi (PT) WAJIB masuk dengan flag CORPORATE_UBO
+
+**Langkah 7 — Rekomendasi & Mitigasi:**
+- LOW → APPROVE, MODERATE → APPROVE_WITH_MONITOR, MODERATE-HIGH → REQUIRE_EDD, HIGH → ESCALATE_FOR_EDD
+- Jika action BUKAN APPROVE: required_documents TIDAK BOLEH kosong
+- risk_mitigation: berikan 3-5 langkah mitigasi konkret dalam Bahasa Indonesia
+
+### ATURAN KETAT (GUARDRAILS)
+1. risk_contamination_score HARUS = sum(score_breakdown)
+2. Jika PPATK has_active_sanctions=true → aml_risk WAJIB >= 40
+3. Jika ada OFAC/UN hit → aml_risk WAJIB >= 45
+4. Pemegang saham korporasi (PT) → WAJIB spider_web dengan flag CORPORATE_UBO
+5. Status TERTUTUP = PT Tertutup, BUKAN risiko
+6. Semua narasi finding dan narrative WAJIB dalam Bahasa Indonesia
+7. Jangan mengarang data yang tidak ada di sumber
+
+### FORMAT OUTPUT (JSON SCHEMA)
+Output HARUS 100% valid JSON sesuai dengan skema berikut:
+{json.dumps(KYBInvestigationOutput.model_json_schema(), indent=2)}
+
+{f"### CATATAN REVISI DARI CRITIC: {revision_feedback}" if revision_feedback else ""}
+{f"### FIELD BERMASALAH: {', '.join(missing_fields)}" if missing_fields else ""}
 """
+    return prompt
+
+
+def ai_researcher(ahu_data: dict, ppatk_summary: dict,
+                  sipp_cases: list, osint_result: dict,
+                  start_time_ms: int = 0,
+                  revision_feedback: str = "",
+                  missing_fields: list = None) -> KYBInvestigationOutput:
+    """
+    AI Researcher: Membaca 4 sumber JSON sekaligus dan merangkum
+    narasi komprehensif → KYBInvestigationOutput.
+
+    Uses explanation-first sequencing for consistent scoring.
+    Uses Pydantic response_schema for structural enforcement.
+    """
+    print(f"\n   🔬 AI Researcher: Menyusun narasi dari 4 sumber data...")
+
+    prompt = _build_researcher_prompt(
+        ahu_data, ppatk_summary, sipp_cases, osint_result,
+        revision_feedback, missing_fields
+    )
 
     for attempt in range(3):
         try:
@@ -267,82 +356,24 @@ Score adders:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    temperature=0.2,
+                    temperature=0.15,
                 ),
             )
 
-            raw = json.loads(response.text)
+            output = KYBInvestigationOutput.model_validate_json(response.text)
+
+            # Post-process: inject processing time
             elapsed_ms = int(time.time() * 1000) - start_time_ms if start_time_ms else 0
+            output.metadata.processing_time_ms = elapsed_ms
+            output.metadata.status = "COMPLETED"
 
-            # Build KYBInvestigationOutput
-            meta = raw.get("metadata", {})
-            corp = raw.get("corporate_entity", {})
-            scoring = raw.get("ai_risk_scoring", {})
-            bd = scoring.get("score_breakdown", {})
-            spider = raw.get("spider_web_analysis", {})
-            reco = raw.get("ai_recommendation", {})
-
-            output = KYBInvestigationOutput(
-                metadata=InvestigationMetadata(
-                    investigation_id=meta.get("investigation_id",
-                                              f"KYB-{datetime.now().strftime('%Y%m%d')}-001"),
-                    timestamp=meta.get("timestamp",
-                                       datetime.now(timezone.utc).isoformat()),
-                    processing_time_ms=elapsed_ms or meta.get("processing_time_ms", 0),
-                    status="COMPLETED",
-                ),
-                corporate_entity=CorporateEntity(
-                    name=corp.get("name",
-                                  ahu_data.get("company", {}).get("name", "")),
-                    sk_number=corp.get("sk_number",
-                                       ahu_data.get("company", {}).get("skNumber", "")),
-                    company_type=corp.get("company_type",
-                                          ahu_data.get("company", {}).get("type", "")),
-                ),
-                ai_risk_scoring=AIRiskScoring(
-                    overall_risk_level=scoring.get("overall_risk_level", "MODERATE"),
-                    risk_contamination_score=scoring.get("risk_contamination_score", 0),
-                    score_breakdown=ScoreBreakdown(
-                        aml_risk=bd.get("aml_risk", 0),
-                        legal_risk=bd.get("legal_risk", 0),
-                        reputation_risk=bd.get("reputation_risk", 0),
-                        ownership_risk=bd.get("ownership_risk", 0),
-                    ),
-                ),
-                intelligence_data=[
-                    IntelligenceDimension(
-                        dimension=d.get("dimension", ""),
-                        source_system=d.get("source_system", ""),
-                        data_points=[
-                            IntelligenceDataPoint(
-                                attribute=dp.get("attribute", ""),
-                                value=dp.get("value", ""),
-                            )
-                            for dp in d.get("data_points", [])
-                        ],
-                        finding=d.get("finding", ""),
-                        risk_weight=d.get("risk_weight", 0),
-                        category=d.get("category", ""),
-                    )
-                    for d in raw.get("intelligence_data", [])
-                ],
-                spider_web_analysis=SpiderWebAnalysis(
-                    total_contamination_paths=spider.get("total_contamination_paths", 0),
-                    problematic_entities_connected=[
-                        ProblematicEntity(
-                            entity_name=e.get("entity_name", ""),
-                            connection_type=e.get("connection_type", ""),
-                            risk_flag=e.get("risk_flag", ""),
-                        )
-                        for e in spider.get("problematic_entities_connected", [])
-                    ],
-                ),
-                ai_recommendation=AIRecommendation(
-                    action=reco.get("action", "REQUIRE_EDD"),
-                    narrative=reco.get("narrative", ""),
-                    required_documents=reco.get("required_documents", []),
-                ),
-            )
+            # Ensure corporate_entity is populated from AHU
+            if not output.corporate_entity.name:
+                output.corporate_entity.name = ahu_data.get("company", {}).get("name", "")
+            if not output.corporate_entity.sk_number:
+                output.corporate_entity.sk_number = ahu_data.get("company", {}).get("skNumber", "")
+            if not output.corporate_entity.company_type:
+                output.corporate_entity.company_type = ahu_data.get("company", {}).get("type", "")
 
             score = output.ai_risk_scoring.risk_contamination_score
             level = output.ai_risk_scoring.overall_risk_level
@@ -365,41 +396,79 @@ def ai_critic(kyb_output: KYBInvestigationOutput,
               ahu_data: dict, ppatk_summary: dict,
               sipp_cases: list, osint_result: dict) -> CriticFeedback:
     """
-    AI Critic: Membaca narasi dari Researcher dan membandingkannya
-    dengan risk_weights.json. Validasi guardrails dan konsistensi skor.
+    AI Critic: Validasi guardrails dan konsistensi skor.
 
-    Framework: "AI Critic bertugas membaca narasi dari Researcher dan
-    membandingkannya dengan risk_weights.json. AI ini menghitung final
-    Risk Score secara deterministik dan menjustifikasi skor tersebut."
+    Calibrated per FATF RBA, POJK 8/2023, PPATK NRA 2023.
     """
     print(f"\n   🕵️ AI Critic: Validasi guardrails...")
 
     kyb_json = kyb_output.model_dump_json(indent=2)
 
     prompt = f"""
-Evaluasi KYB Intelligence Report berikut terhadap data mentah asli.
+### PERSONA
+Anda adalah Quality Assurance Auditor untuk KYB Intelligence Report.
+Tugas Anda: memvalidasi bahwa laporan KYB di bawah ini memenuhi SEMUA guardrails regulasi.
 
-=== KYB REPORT ===
+### KYB REPORT YANG AKAN DIEVALUASI
 {kyb_json}
 
-=== DATA MENTAH (GROUND TRUTH) ===
+### DATA MENTAH (GROUND TRUTH)
 AHU: {json.dumps(ahu_data, ensure_ascii=False)[:3000]}
 PPATK: {json.dumps(ppatk_summary, ensure_ascii=False)[:2000]}
 SIPP: {json.dumps(sipp_cases, ensure_ascii=False)[:2000]}
 OSINT: {json.dumps(osint_result, ensure_ascii=False)[:2000]}
 
-=== GUARDRAILS ===
-1. HARUS ada 4 intelligence_data dimensi lengkap
-2. risk_contamination_score HARUS = sum(score_breakdown)
-3. overall_risk_level: 1-25=LOW, 26-50=MODERATE, 51-75=MODERATE-HIGH, 76-100=HIGH
-4. Jika PPATK has_active_sanctions=true → AML risk_weight >= 40
-5. Pemegang saham korporasi (PT) → WAJIB spider_web CORPORATE_UBO
-6. total_contamination_paths = jumlah problematic_entities_connected
-7. LOW→APPROVE, MODERATE→APPROVE_WITH_MONITOR, MODERATE-HIGH→REQUIRE_EDD, HIGH→ESCALATE_FOR_EDD
-8. required_documents TIDAK BOLEH kosong jika action bukan APPROVE
-9. Status TERTUTUP bukan risiko
+### CHECKLIST GUARDRAILS (Periksa SEMUA)
 
-JIKA SEMUA OK → is_valid=true. JIKA ADA MASALAH → is_valid=false + feedback.
+1. ✅ HARUS ada TEPAT 4 intelligence_data dimensi:
+   - Corporate & Industry Profiling (Ownership_and_Industry_Risk)
+   - AML & APU PPT (AML_Risk)
+   - Legal & Litigation (Legal_Risk)
+   - Adverse Media & OSINT (Reputation_Risk)
+
+2. ✅ risk_contamination_score HARUS = aml_risk + legal_risk + reputation_risk + ownership_risk
+   (Hitung manual dan bandingkan)
+
+3. ✅ overall_risk_level HARUS sesuai skor:
+   - 1-25 = LOW
+   - 26-50 = MODERATE
+   - 51-75 = MODERATE-HIGH
+   - 76-100 = HIGH
+
+4. ✅ Jika PPATK has_active_sanctions=true → aml_risk WAJIB >= 40
+
+5. ✅ Setiap pemegang saham korporasi (nama dimulai "PT ") WAJIB ada di spider_web_analysis
+   dengan risk_flag = CORPORATE_UBO
+
+6. ✅ total_contamination_paths = len(problematic_entities_connected)
+
+7. ✅ Jika action BUKAN APPROVE → required_documents TIDAK BOLEH kosong
+
+8. ✅ Mapping action harus benar:
+   - LOW → APPROVE
+   - MODERATE → APPROVE_WITH_MONITOR
+   - MODERATE-HIGH → REQUIRE_EDD
+   - HIGH → ESCALATE_FOR_EDD
+
+9. ✅ scoring_reasoning TIDAK BOLEH kosong — harus menjelaskan logika penilaian
+
+10. ✅ Status TERTUTUP BUKAN faktor risiko — jika digunakan sebagai risiko, TOLAK
+
+11. ✅ company_profile harus terisi lengkap dari data AHU, dan business_description harus berisi 2-3 paragraf narasi bisnis.
+
+12. ✅ company_goals harus berisi semua KBLI dari companyGoals AHU
+
+13. ✅ shareholders_ubo harus berisi minimal top 5 pemegang saham
+
+14. ✅ risk_mitigation TIDAK BOLEH kosong jika action bukan APPROVE
+
+### FORMAT OUTPUT (JSON SCHEMA)
+Output HARUS 100% valid JSON sesuai dengan skema berikut:
+{json.dumps(CriticFeedback.model_json_schema(), indent=2)}
+
+### OUTPUT
+- Jika SEMUA guardrails terpenuhi: is_valid=true, feedback="Laporan memenuhi semua guardrails."
+- Jika ADA yang gagal: is_valid=false, feedback=deskripsi detail masalah, missing_fields=list field bermasalah
 """
 
     for attempt in range(3):
@@ -409,7 +478,6 @@ JIKA SEMUA OK → is_valid=true. JIKA ADA MASALAH → is_valid=false + feedback.
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=CriticFeedback,
                     temperature=0.1,
                 ),
             )
@@ -418,7 +486,7 @@ JIKA SEMUA OK → is_valid=true. JIKA ADA MASALAH → is_valid=false + feedback.
             if fb.is_valid:
                 print("   ✅ Report LULUS validasi guardrails!")
             else:
-                print(f"   ❌ Report DITOLAK: {fb.feedback}")
+                print(f"   ❌ Report DITOLAK: {fb.feedback[:120]}...")
             return fb
 
         except Exception as e:

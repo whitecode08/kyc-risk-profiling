@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYB Intelligence Report — {{ corporate_entity.name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+
+        :root {
+            --font-title: 'Georgia', 'Lora', serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --size-title: 16pt;
+            --size-header: 14pt;
+            --size-subheader: 12pt;
+            --size-text: 10pt;
+            
+            --color-primary: #0f172a; /* Slate 900 */
+            --color-primary-light: #1e293b; /* Slate 800 */
+            --color-accent: #d97706; /* Amber 600 */
+            --color-accent-light: #fef3c7; /* Amber 100 */
+            --color-border: #cbd5e1; /* Slate 300 */
+            --color-bg-card: #f8fafc; /* Slate 50 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            color: #1e293b;
+            background: #ffffff;
+            font-size: var(--size-text);
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ─── Cover Page ─────────────────────────────────────────────── */
+        .cover {
+            background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 40px;
+            min-height: 297mm; /* Standard A4 height */
+            height: 100vh;
+            page-break-after: always;
+            position: relative;
+            border: 15px solid #0f172a;
+        }
+        .cover-border-inner {
+            border: 1px solid rgba(217, 119, 6, 0.4);
+            height: 100%;
+            width: 100%;
+            padding: 35px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        .cover-header {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .cover-emblem {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #d97706, #b45309);
+            margin: 0 auto 15px auto;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .cover-label {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            letter-spacing: 2px;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .cover-title {
+            font-family: var(--font-title);
+            font-size: var(--size-title);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            color: #ffffff;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--color-accent);
+            padding-bottom: 12px;
+            display: inline-block;
+            width: 100%;
+        }
+        .cover-tagline {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: #94a3b8;
+            margin-top: 8px;
+            margin-bottom: 30px;
+            font-weight: 400;
+        }
+        .cover-company-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--color-accent);
+            border-radius: 6px;
+            padding: 24px;
+            text-align: left;
+            margin-bottom: 25px;
+        }
+        .cover-company-name {
+            font-family: var(--font-title);
+            font-size: var(--size-title);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .cover-company-type {
+            font-family: var(--font-body);
+            font-size: var(--size-subheader);
+            color: #94a3b8;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        .risk-badge {
+            display: block;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: var(--size-subheader);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            font-family: var(--font-body);
+        }
+        .risk-low { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; }
+        .risk-moderate { background: linear-gradient(135deg, #b45309, #eab308); color: #fff; }
+        .risk-moderate-high { background: linear-gradient(135deg, #c2410c, #f97316); color: #fff; }
+        .risk-high { background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff; }
+
+        .cover-meta {
+            margin-top: auto;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .cover-meta-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cover-meta-row:last-child {
+            border-bottom: none;
+        }
+        .cover-meta-key {
+            width: 180px;
+            font-size: var(--size-subheader);
+            color: #94a3b8;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .cover-meta-val {
+            flex: 1;
+            font-size: var(--size-text);
+            color: #e2e8f0;
+            font-weight: 500;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Page Layout ─────────────────────────────────────────────── */
+        .page {
+            padding: 40px;
+            min-height: 297mm;
+            page-break-after: always;
+            position: relative;
+        }
+        .page:last-child { page-break-after: avoid; }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--color-primary);
+            margin-bottom: 24px;
+            font-size: var(--size-header);
+            color: var(--color-primary);
+            font-weight: 700;
+            font-family: var(--font-title);
+            text-transform: uppercase;
+        }
+        .page-header span:last-child {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* ─── Section Headers ─────────────────────────────────────────── */
+        .section {
+            margin-bottom: 24px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .section-icon {
+            font-size: 16px;
+            margin-right: 8px;
+        }
+        .section-title {
+            font-family: var(--font-title);
+            font-size: var(--size-header);
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .section-subtitle {
+            font-family: var(--font-body);
+            font-size: var(--size-text);
+            color: var(--color-text-muted);
+            margin-left: auto;
+            font-weight: 500;
+        }
+
+        /* ─── Tables ──────────────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: var(--size-text);
+        }
+        thead th {
+            background: var(--color-primary);
+            color: #ffffff;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: var(--size-subheader);
+            font-family: var(--font-body);
+            letter-spacing: 0.5px;
+        }
+        thead th:first-child { border-radius: 4px 0 0 0; }
+        thead th:last-child { border-radius: 0 4px 0 0; }
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            font-family: var(--font-body);
+        }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        tbody tr:hover { background: #f1f5f9; }
+
+        /* ─── Key-Value Pairs ─────────────────────────────────────────── */
+        .kv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .kv-row {
+            display: flex;
+            padding: 8px 12px;
+            background: var(--color-bg-card);
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .kv-key {
+            width: 150px;
+            font-weight: 700;
+            color: var(--color-primary-light);
+            font-size: var(--size-subheader);
+            font-family: var(--font-body);
+        }
+        .kv-val {
+            flex: 1;
+            font-size: var(--size-text);
+            color: #1e293b;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Score Bars ──────────────────────────────────────────────── */
+        .score-bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .score-bar-label {
+            width: 220px;
+            font-size: var(--size-subheader);
+            color: #475569;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .score-bar-track {
+            flex: 1;
+            height: 18px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .score-bar-value {
+            width: 65px;
+            text-align: right;
+            font-size: var(--size-subheader);
+            font-weight: 700;
+            margin-left: 10px;
+            font-family: var(--font-body);
+        }
+        .fill-aml { background: linear-gradient(90deg, #991b1b, #ef4444); }
+        .fill-legal { background: linear-gradient(90deg, #b45309, #f59e0b); }
+        .fill-reputation { background: linear-gradient(90deg, #0f766e, #14b8a6); }
+        .fill-ownership { background: linear-gradient(90deg, #1e3a6e, #3b82f6); }
+
+        /* ─── Finding Box ─────────────────────────────────────────────── */
+        .finding-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--color-primary);
+            padding: 12px 16px;
+            margin: 10px 0 16px 0;
+            font-size: var(--size-text);
+            color: #334155;
+            border-radius: 0 6px 6px 0;
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Dimension Card ──────────────────────────────────────────── */
+        .dim-header {
+            padding: 10px 16px;
+            border-radius: 6px 6px 0 0;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: var(--size-subheader);
+            font-family: var(--font-title);
+            margin-bottom: 0px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dim-source {
+            font-weight: 400;
+            font-size: var(--size-text);
+            opacity: 0.9;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Action Badge ────────────────────────────────────────────── */
+        .action-badge {
+            padding: 14px 24px;
+            border-radius: 6px;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: var(--size-header);
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            font-family: var(--font-body);
+            text-transform: uppercase;
+        }
+
+        /* ─── Document Checklist ──────────────────────────────────────── */
+        .doc-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: var(--size-text);
+            font-family: var(--font-body);
+        }
+        .doc-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--color-accent);
+            border-radius: 3px;
+            margin-right: 12px;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        /* ─── Mitigation List ─────────────────────────────────────────── */
+        .mitigation-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: #fffbeb;
+            border-radius: 6px;
+            border-left: 4px solid var(--color-accent);
+            font-size: var(--size-text);
+            color: #78350f;
+            font-family: var(--font-body);
+        }
+        .mitigation-num {
+            font-weight: 700;
+            margin-right: 8px;
+            color: var(--color-accent);
+            min-width: 18px;
+        }
+
+        /* ─── Spider Web Flag Colors ──────────────────────────────────── */
+        .flag-critical { color: #b91c1c; font-weight: 700; }
+        .flag-high { color: #c2410c; font-weight: 600; }
+        .flag-medium { color: #b45309; font-weight: 500; }
+
+        /* ─── Tags ────────────────────────────────────────────────────── */
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: var(--size-text);
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .tag-risk { background: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+        .tag-safe { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+        .tag-ubo { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+        .tag-corp { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+
+        /* ─── Footer ──────────────────────────────────────────────────── */
+        .footer {
+            margin-top: 30px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+            font-size: var(--size-text);
+            color: var(--color-text-muted);
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Scoring Reasoning Box ──────────────────────────────────── */
+        .reasoning-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: var(--size-text);
+            color: #78350f;
+            line-height: 1.6;
+            font-family: var(--font-body);
+        }
+
+        /* ─── Executive Summary Box ──────────────────────────────────── */
+        .exec-summary-box {
+            background: var(--color-bg-card);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: var(--size-text);
+            color: #334155;
+            line-height: 1.7;
+            text-align: justify;
+            font-family: var(--font-body);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- COVER PAGE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-border-inner">
+        <div class="cover-header">
+            <div class="cover-emblem">🛡️</div>
+            <div class="cover-label">Lembaga Jasa Keuangan &nbsp;·&nbsp; Divisi Compliance &amp; AML</div>
+            <div class="cover-title">KYB Intelligence Report</div>
+            <div class="cover-tagline">Know Your Business — AI-Powered Risk Profiling System v3.1</div>
+        </div>
+
+        <div class="cover-body">
+            <div class="cover-company-box">
+                <div class="cover-company-name">{{ corporate_entity.name }}</div>
+                <div class="cover-company-type">{{ company_profile.company_type }} &nbsp;·&nbsp; {{ company_profile.status }}</div>
+            </div>
+
+            {% set level = ai_risk_scoring.overall_risk_level | upper %}
+            {% set score = ai_risk_scoring.risk_contamination_score %}
+            <div class="risk-badge {% if level == 'LOW' %}risk-low{% elif level == 'MODERATE' %}risk-moderate{% elif level == 'MODERATE-HIGH' %}risk-moderate-high{% else %}risk-high{% endif %}">
+                {% if level == 'LOW' %}Risiko Rendah{% elif level == 'MODERATE' %}Risiko Sedang{% elif level == 'MODERATE-HIGH' %}Risiko Sedang-Tinggi{% else %}Risiko Tinggi{% endif %}
+                &nbsp;·&nbsp; Skor Kontaminasi: {{ score }}/100
+            </div>
+        </div>
+
+        <div class="cover-meta">
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">ID Investigasi</div>
+                <div class="cover-meta-val">{{ metadata.investigation_id }}</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Timestamp</div>
+                <div class="cover-meta-val">{{ metadata.timestamp }}</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Nomor SK AHU</div>
+                <div class="cover-meta-val">{{ company_profile.sk_number }}</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Jenis Perusahaan</div>
+                <div class="cover-meta-val">{{ company_profile.company_type }}</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Jangka Waktu</div>
+                <div class="cover-meta-val">{{ company_profile.time_period }}</div>
+            </div>
+            <div class="cover-meta-row">
+                <div class="cover-meta-key">Processing Time</div>
+                <div class="cover-meta-val">{{ metadata.processing_time_ms }}ms</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2: COMPANY PROFILE & KBLI -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>{{ corporate_entity.name }}</span>
+    </div>
+
+    <!-- Company Profile -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🏢</span>
+            <span class="section-title">Profil Perusahaan</span>
+            <span class="section-subtitle">Sumber: Ditjen AHU Kemenkumham</span>
+        </div>
+
+        <div class="kv-grid">
+            <div class="kv-row">
+                <div class="kv-key">Nama Perusahaan</div>
+                <div class="kv-val">{{ company_profile.name }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Nomor SK</div>
+                <div class="kv-val">{{ company_profile.sk_number }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Tanggal SK</div>
+                <div class="kv-val">{{ company_profile.sk_date }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Jenis Perusahaan</div>
+                <div class="kv-val">{{ company_profile.company_type }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Status</div>
+                <div class="kv-val">{{ company_profile.status }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Jangka Waktu</div>
+                <div class="kv-val">{{ company_profile.time_period }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Alamat</div>
+                <div class="kv-val">{{ company_profile.address }}</div>
+            </div>
+            <div class="kv-row">
+                <div class="kv-key">Provinsi / Kab-Kota</div>
+                <div class="kv-val">{{ company_profile.province }}, {{ company_profile.regency }}</div>
+            </div>
+        </div>
+
+        <!-- Executive Summary / Business Description -->
+        {% if company_profile.business_description %}
+        <div class="exec-summary-box">
+            <div style="font-weight: 700; color: var(--color-primary); margin-bottom: 6px; font-size: var(--size-subheader); text-transform: uppercase; letter-spacing: 0.5px;">
+                Executive Summary &amp; Operation Performance
+            </div>
+            <!-- Render newlines properly -->
+            {% for paragraph in company_profile.business_description.split('\n') %}
+                {% if paragraph.strip() %}
+                    <p style="margin-bottom: 8px;">{{ paragraph }}</p>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Stock Info -->
+        <div style="margin-top: 16px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Jenis Modal</th>
+                        <th>Jumlah Lembar</th>
+                        <th>Harga/Lembar</th>
+                        <th>Total Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Dasar</td>
+                        <td>{{ company_profile.base_stock.number_of_shares }}</td>
+                        <td>{{ company_profile.base_stock.price_per_share }}</td>
+                        <td>{{ company_profile.base_stock.grand_total }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Ditempatkan</td>
+                        <td>{{ company_profile.issued_stock.number_of_shares }}</td>
+                        <td>{{ company_profile.issued_stock.price_per_share }}</td>
+                        <td>{{ company_profile.issued_stock.grand_total }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Modal Disetor</td>
+                        <td colspan="3">{{ company_profile.paid_up_stock }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Company Goals (KBLI) -->
+    <div class="section" style="margin-top: 16px;">
+        <div class="section-header">
+            <span class="section-icon">📋</span>
+            <span class="section-title">Kegiatan Usaha (KBLI)</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 35px;">#</th>
+                    <th style="width: 65px;">Kode</th>
+                    <th style="width: 130px;">Nama</th>
+                    <th>Deskripsi</th>
+                    <th style="width: 60px;">Risiko</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for goal in company_goals %}
+                <tr>
+                    <td style="text-align: center;">{{ goal.no }}</td>
+                    <td style="font-weight: 600;">{{ goal.code }}</td>
+                    <td style="font-weight: 500;">{{ goal.name }}</td>
+                    <td style="font-size: var(--size-text); color: #64748b;">{{ goal.description[:120] }}{% if goal.description|length > 120 %}...{% endif %}</td>
+                    <td style="text-align: center;">
+                        {% if goal.is_high_risk %}
+                        <span class="tag tag-risk">HIGH</span>
+                        {% else %}
+                        <span class="tag tag-safe">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3: SHAREHOLDERS / UBO -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>{{ corporate_entity.name }}</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">👥</span>
+            <span class="section-title">Pemegang Saham & Ultimate Beneficial Owner (UBO)</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Nama</th>
+                    <th style="width: 100px;">Jabatan</th>
+                    <th style="width: 85px;">Jumlah Saham</th>
+                    <th style="width: 55px;">%</th>
+                    <th style="width: 50px;">Tipe</th>
+                    <th style="width: 50px;">UBO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sh in shareholders_ubo %}
+                <tr>
+                    <td style="text-align: center;">{{ loop.index }}</td>
+                    <td style="font-weight: 600;">{{ sh.name }}</td>
+                    <td>{{ sh.position }}</td>
+                    <td style="text-align: right;">{{ "{:,}".format(sh.number_of_shares) }}</td>
+                    <td style="text-align: right; font-weight: 600;">{{ "%.2f"|format(sh.percentage) }}%</td>
+                    <td style="text-align: center;">
+                        {% if sh.is_corporate %}
+                        <span class="tag tag-corp">PT</span>
+                        {% else %}
+                        <span class="tag tag-safe">Individu</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if sh.is_ubo %}
+                        <span class="tag tag-ubo">UBO</span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Score Breakdown -->
+    <div class="section" style="margin-top: 20px;">
+        <div class="section-header">
+            <span class="section-icon">📊</span>
+            <span class="section-title">Ringkasan Skor Risiko</span>
+        </div>
+
+        {% set bd = ai_risk_scoring.score_breakdown %}
+
+        <div class="score-bar-row">
+            <div class="score-bar-label">AML & APU PPT Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-aml" style="width: {{ (bd.aml_risk / 50 * 100) | round }}%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #dc2626;">{{ bd.aml_risk }}/50</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Legal & Litigation Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-legal" style="width: {{ (bd.legal_risk / 20 * 100) | round }}%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #d97706;">{{ bd.legal_risk }}/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Adverse Media & Reputation</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-reputation" style="width: {{ (bd.reputation_risk / 20 * 100) | round }}%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #059669;">{{ bd.reputation_risk }}/20</div>
+        </div>
+        <div class="score-bar-row">
+            <div class="score-bar-label">Ownership & Industry Risk</div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill fill-ownership" style="width: {{ (bd.ownership_risk / 25 * 100) | round }}%;"></div>
+            </div>
+            <div class="score-bar-value" style="color: #2563eb;">{{ bd.ownership_risk }}/25</div>
+        </div>
+
+        <div style="margin-top: 10px; padding: 10px 14px; border-radius: 6px; background: {% if level == 'LOW' %}#f0fdf4{% elif level == 'MODERATE' %}#fefce8{% elif level == 'MODERATE-HIGH' %}#fff7ed{% else %}#fef2f2{% endif %}; border: 1px solid {% if level == 'LOW' %}#bbf7d0{% elif level == 'MODERATE' %}#fef08a{% elif level == 'MODERATE-HIGH' %}#fed7aa{% else %}#fecaca{% endif %};">
+            <strong style="font-size: var(--size-subheader); color: {% if level == 'LOW' %}#166534{% elif level == 'MODERATE' %}#854d0e{% elif level == 'MODERATE-HIGH' %}#9a3412{% else %}#991b1b{% endif %};">
+                TOTAL SKOR: {{ score }}/100 &nbsp;→&nbsp;
+                {% if level == 'LOW' %}RISIKO RENDAH{% elif level == 'MODERATE' %}RISIKO SEDANG{% elif level == 'MODERATE-HIGH' %}RISIKO SEDANG-TINGGI{% else %}RISIKO TINGGI{% endif %}
+            </strong>
+        </div>
+
+        {% if ai_risk_scoring.scoring_reasoning %}
+        <div class="reasoning-box">
+            <strong>📝 Reasoning:</strong> {{ ai_risk_scoring.scoring_reasoning }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 4: INTELLIGENCE DIMENSIONS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>{{ corporate_entity.name }}</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🔍</span>
+            <span class="section-title">Analisis Dimensi Intelligence</span>
+        </div>
+
+        {% set dim_colors = {
+            "Ownership_and_Industry_Risk": "#1e3a6e",
+            "AML_Risk": "#991b1b",
+            "Legal_Risk": "#92400e",
+            "Reputation_Risk": "#065f46"
+        } %}
+
+        {% for dim in intelligence_data %}
+        <div style="margin-bottom: 16px;">
+            <div class="dim-header" style="background: {{ dim_colors.get(dim.category, '#1e3a6e') }};">
+                <span>{{ loop.index }}. {{ dim.dimension | upper }}</span>
+                <span class="dim-source">{{ dim.source_system }} &nbsp;·&nbsp; Bobot: {{ dim.risk_weight }} poin</span>
+            </div>
+
+            {% if dim.data_points %}
+            <table>
+                <thead>
+                    <tr><th style="width: 180px;">Atribut</th><th>Nilai</th></tr>
+                </thead>
+                <tbody>
+                    {% for dp in dim.data_points %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ dp.attribute }}</td>
+                        <td>
+                            {% if dp.value is iterable and dp.value is not string and dp.value is not mapping %}
+                                {{ dp.value | join(" · ") }}
+                            {% elif dp.value is sameas true %}
+                                <span class="tag tag-risk">YA</span>
+                            {% elif dp.value is sameas false %}
+                                <span class="tag tag-safe">TIDAK</span>
+                            {% else %}
+                                {{ dp.value }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if dim.finding %}
+            <div class="finding-box" style="border-color: {{ dim_colors.get(dim.category, '#1e3a6e') }};">
+                {{ dim.finding }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 5: SPIDER WEB + RECOMMENDATION + MITIGATION -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <span>KYB Intelligence Report &nbsp;·&nbsp; Confidential</span>
+        <span>{{ corporate_entity.name }}</span>
+    </div>
+
+    <!-- Spider Web -->
+    <div class="section">
+        <div class="section-header">
+            <span class="section-icon">🕸️</span>
+            <span class="section-title">Analisis Jaringan Kontaminasi (Spider Web)</span>
+        </div>
+
+        <p style="margin-bottom: 8px; color: #475569; font-size: var(--size-text);">
+            Total Jalur Kontaminasi: <strong>{{ spider_web_analysis.total_contamination_paths }}</strong>
+        </p>
+
+        {% if spider_web_analysis.problematic_entities_connected %}
+        <table>
+            <thead>
+                <tr><th style="width: 30px;">#</th><th>Nama Entitas</th><th>Tipe Koneksi</th><th>Risk Flag</th></tr>
+            </thead>
+            <tbody>
+                {% for ent in spider_web_analysis.problematic_entities_connected %}
+                <tr>
+                    <td style="text-align: center;">{{ loop.index }}</td>
+                    <td style="font-weight: 600;">{{ ent.entity_name }}</td>
+                    <td>{{ ent.connection_type }}</td>
+                    <td class="{% if 'DTTOT' in ent.risk_flag or 'OFAC' in ent.risk_flag %}flag-critical{% elif 'STR' in ent.risk_flag or 'PEP' in ent.risk_flag or 'SHELL' in ent.risk_flag %}flag-high{% else %}flag-medium{% endif %}">
+                        {{ ent.risk_flag }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="font-style: italic; color: #94a3b8; font-size: var(--size-text);">Tidak ditemukan jalur kontaminasi yang signifikan.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recommendation -->
+    <div class="section" style="margin-top: 20px;">
+        <div class="section-header">
+            <span class="section-icon">✅</span>
+            <span class="section-title">Rekomendasi & Mitigasi Risiko</span>
+        </div>
+
+        {% set action = ai_recommendation.action %}
+        {% set action_labels = {
+            "APPROVE": "SETUJUI",
+            "APPROVE_WITH_MONITOR": "SETUJUI DENGAN MONITORING",
+            "REQUIRE_EDD": "ENHANCED DUE DILIGENCE DIPERLUKAN",
+            "ESCALATE_FOR_EDD": "ESKALASI KE KOMITE MANAJEMEN RISIKO",
+            "REJECT": "TOLAK"
+        } %}
+        {% set action_colors = {
+            "APPROVE": "linear-gradient(135deg, #166534, #22c55e)",
+            "APPROVE_WITH_MONITOR": "linear-gradient(135deg, #854d0e, #f59e0b)",
+            "REQUIRE_EDD": "linear-gradient(135deg, #9a3412, #f97316)",
+            "ESCALATE_FOR_EDD": "linear-gradient(135deg, #991b1b, #ef4444)",
+            "REJECT": "linear-gradient(135deg, #450a0a, #b91c1c)"
+        } %}
+
+        <div class="action-badge" style="background: {{ action_colors.get(action, '#475569') }};">
+            {{ action_labels.get(action, action) }}
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 4px;">Narasi Rekomendasi</div>
+            <p style="color: #475569; font-size: var(--size-text); line-height: 1.65;">{{ ai_recommendation.narrative }}</p>
+        </div>
+
+        {% if ai_recommendation.risk_mitigation %}
+        <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 6px;">Langkah Mitigasi Risiko</div>
+            {% for step in ai_recommendation.risk_mitigation %}
+            <div class="mitigation-item">
+                <span class="mitigation-num">{{ loop.index }}.</span>
+                <span>{{ step }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if ai_recommendation.required_documents %}
+        <div>
+            <div style="font-weight: 600; font-size: var(--size-subheader); color: #1e293b; margin-bottom: 6px;">Dokumen yang Diperlukan</div>
+            {% for doc in ai_recommendation.required_documents %}
+            <div class="doc-item">
+                <div class="doc-checkbox"></div>
+                <div>{{ loop.index }}. {{ doc }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Laporan ini dihasilkan secara otomatis oleh AI-KYB Intelligence System v3.1 dan bersifat <strong>CONFIDENTIAL</strong>.
+        Temuan dan rekomendasi merupakan penilaian awal berbasis data yang tersedia pada saat pemrosesan.
+        Keputusan akhir tetap menjadi kewenangan komite manajemen risiko yang berwenang.
+        <br><br>
+        ID: {{ metadata.investigation_id }} &nbsp;·&nbsp;
+        Generated: {{ metadata.timestamp }} &nbsp;·&nbsp;
+        Processing: {{ metadata.processing_time_ms }}ms
+    </div>
+</div>
+
+</body>
+</html>

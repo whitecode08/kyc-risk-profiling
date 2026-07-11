@@ -7,14 +7,41 @@ KYB Intelligence Pipeline — Data Ingestion
 """
 
 import json
+import re
 import glob
 from pathlib import Path
 from src.config import INPUT_DIR
 
 
+# ─── Naming Utilities ─────────────────────────────────────────────────────────
+
+def extract_db_number(filepath: str) -> str:
+    """
+    Extract database number prefix from input filename.
+
+    Examples:
+        '01__ahu__aneka_bintang_gading.json' → '01'
+        'aneka_bintang_gading.json' → '00'
+    """
+    name = Path(filepath).stem
+    match = re.match(r'^(\d+)__', name)
+    return match.group(1) if match else "00"
+
+
+def make_output_filename(db_number: str, category: str, company_name: str, ext: str = ".json") -> str:
+    """
+    Generate standardized output filename.
+
+    Format: {db_number}__{category}__{lower(company_name)}{ext}
+    Example: 01__osint__aneka_bintang_gading.json
+    """
+    safe = company_name.lower().replace(" ", "_").replace("/", "-")
+    return f"{db_number}__{category}__{safe}{ext}"
+
+
 # ─── AHU Loader ───────────────────────────────────────────────────────────────
 
-def load_ahu_json(json_path: str) -> dict:
+def load_ahu_json(json_path: str) -> tuple:
     """
     Muat profil perusahaan dari file JSON AHU.
 
@@ -22,7 +49,7 @@ def load_ahu_json(json_path: str) -> dict:
         json_path: Path ke file JSON (format skema Ditjen AHU)
 
     Returns:
-        dict profil perusahaan
+        tuple (dict profil perusahaan, str db_number)
     """
     path = Path(json_path)
     if not path.exists():
@@ -38,8 +65,10 @@ def load_ahu_json(json_path: str) -> dict:
     if not company_name:
         raise ValueError(f"Nama perusahaan kosong di file: {json_path}")
 
-    print(f"   ✅ AHU: Dimuat dari {path.name} — {company_name}")
-    return data
+    db_number = extract_db_number(str(path))
+
+    print(f"   ✅ AHU: Dimuat dari {path.name} — {company_name} (DB #{db_number})")
+    return data, db_number
 
 
 def scan_ahu_folder() -> dict:
@@ -64,12 +93,12 @@ def scan_ahu_folder() -> dict:
     return companies
 
 
-def find_ahu_by_name(company_name: str) -> dict:
+def find_ahu_by_name(company_name: str) -> tuple:
     """
     Cari file AHU di data/input/ahu/ berdasarkan nama perusahaan (partial match).
 
     Returns:
-        dict profil perusahaan, atau dict dengan key 'error'
+        tuple (dict profil perusahaan, str db_number), atau (dict dengan key 'error', '00')
     """
     companies = scan_ahu_folder()
     query = company_name.upper()
@@ -85,7 +114,7 @@ def find_ahu_by_name(company_name: str) -> dict:
             return load_ahu_json(path)
 
     return {"error": f"Data AHU tidak ditemukan untuk: '{company_name}'. "
-                     f"Perusahaan tersedia: {', '.join(companies.keys()) or 'kosong'}"}
+                     f"Perusahaan tersedia: {', '.join(companies.keys()) or 'kosong'}"}, "00"
 
 
 # ─── UBO Extraction ──────────────────────────────────────────────────────────
