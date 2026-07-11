@@ -2,20 +2,18 @@
 
 **Autonomous Intelligence Pipeline untuk Know Your Business (KYB) & Anti-Money Laundering (AML)**
 
-Sistem profiling perusahaan berbasis multi-agent AI yang mengotomasi pengumpulan, analisis, dan penilaian risiko nasabah korporat — sesuai regulasi OJK, PPATK, dan standar FATF.
+Sistem profiling perusahaan berbasis AI yang mengotomasi pengumpulan, analisis, dan penilaian risiko nasabah korporat — sesuai regulasi OJK, PPATK, dan standar FATF.
 
 ---
 
 ## Fitur Utama
 
-- **Multi-Agent Pipeline** — Researcher → Internet Research → Drafter → Critic (self-correction loop)
-- **Data AHU** — Baca profil perusahaan dari file JSON/CSV Ditjen AHU, simpan ke internal DB
-- **Data PPATK DTTOT** — Screening sanksi keuangan terarah dari file JSON/CSV, query otomatis per-run
-- **SIPP Litigasi** — Scraping real-time dari 5 Pengadilan Niaga (Kepailitan & PKPU)
-- **Internet OSINT** — Google Search Grounding: adverse media, sanctions, PEP detection
-- **UBO Analysis** — Kalkulasi persentase kepemilikan, deteksi UBO ≥25% (per PPATK)
-- **Risk Scoring (1–100)** — Otomatis, konsisten, dan tervalidasi oleh Critic Agent
-- **Output JSON + PDF** — Profil lengkap + laporan siap cetak per perusahaan
+- **Data AHU & PPATK Ingestion** — Otomatis memproses JSON profil perusahaan dan entitas sanksi dari `data/input/`
+- **UBO Extraction** — Otomatis mendeteksi Top 5 Ultimate Beneficial Owners berdasarkan persentase kepemilikan saham
+- **SIPP Litigasi Scraping** — Mencari kasus hukum terkait perusahaan & UBO
+- **Internet OSINT** — Mencari adverse media, PEP (Politically Exposed Persons), dan sanksi global secara dinamis
+- **Agentic Fusion & Risk Scoring** — Menghitung risk score, level kontaminasi, dan rekomendasi secara deterministik
+- **PDF Report Generation** — Export otomatis profil perusahaan dalam bentuk JSON maupun Intelligence Report PDF
 
 ---
 
@@ -23,40 +21,37 @@ Sistem profiling perusahaan berbasis multi-agent AI yang mengotomasi pengumpulan
 
 ```
 ┌─────────────────── DATA SOURCES ───────────────────────┐
-│  AHU JSON/CSV    PPATK JSON/CSV     SIPP Web (scraped) │
-│       └──────────────┴───────────────────┘             │
-│                        ▼                               │
-│               kyb_internal.db (SQLite)                 │
-│          ahu table │ ppatk table │ perkara table        │
-└────────────────────────┼───────────────────────────────┘
-                         ▼
-     ┌─────────────────────────────────────────┐
-     │  FASE 1: Researcher Agent               │
-     │  · AHU lookup (nama / NIB)              │
-     │  · SIPP litigasi (perusahaan + pengurus)│
-     │  · PPATK DTTOT screening                │
-     └────────────────┬────────────────────────┘
-                      ▼
-     ┌─────────────────────────────────────────┐
-     │  FASE 2: Internet Research Agent        │
-     │  · Adverse media (Google Search)        │
-     │  · Sanctions (OFAC, UN, EU, PPATK)      │
-     │  · PEP detection                        │
-     └────────────────┬────────────────────────┘
-                      ▼
-     ┌─────────────────────────────────────────┐
-     │  FASE 3: Drafter ↔ Critic Loop          │
-     │  · Structured risk assessment           │
-     │  · UBO analysis & scoring (1-100)       │
-     │  · Self-correction (max 3 revisions)    │
-     └────────────────┬────────────────────────┘
-                      ▼
-     ┌─────────────────────────────────────────┐
-     │  FASE 4: Output Generation              │
-     │  · JSON database (output/)              │
-     │  · PDF report                           │
-     │  · HCAT shadow evaluation               │
-     └─────────────────────────────────────────┘
+│  AHU JSON       PPATK JSON         SIPP Web (scraped)  │
+│  (data/input)   (data/input)                           │
+└───────────────┬───────┬───────────────────┬────────────┘
+                ▼       ▼                   ▼
+      ┌─────────────────────────────────────────┐
+      │  FASE 1: Data Ingestion                 │
+      │  · Load AHU & Extract UBO               │
+      │  · Screen PPATK (Corporate + UBO)       │
+      └─────────────────┬───────────────────────┘
+                        ▼
+      ┌─────────────────────────────────────────┐
+      │  FASE 2: SIPP Scraping                  │
+      │  · Litigasi Perusahaan & Pengurus       │
+      └─────────────────┬───────────────────────┘
+                        ▼
+      ┌─────────────────────────────────────────┐
+      │  FASE 3: OSINT Research                 │
+      │  · Adverse media & Sanctions            │
+      └─────────────────┬───────────────────────┘
+                        ▼
+      ┌─────────────────────────────────────────┐
+      │  FASE 4: Agentic Fusion & Risk Scoring  │
+      │  · Structured risk assessment           │
+      │  · Risk calculation                     │
+      └─────────────────┬───────────────────────┘
+                        ▼
+      ┌─────────────────────────────────────────┐
+      │  FASE 5: Report Generation              │
+      │  · JSON output (summary/json/)          │
+      │  · PDF report (summary/pdf/)            │
+      └─────────────────────────────────────────┘
 ```
 
 ---
@@ -72,7 +67,7 @@ Sistem profiling perusahaan berbasis multi-agent AI yang mengotomasi pengumpulan
 
 ```bash
 # 1. Clone atau ekstrak project
-cd customer-profiling-ai
+cd kyc-risk-profiling
 
 # 2. Buat virtual environment
 python -m venv .venv
@@ -86,50 +81,33 @@ source .venv/bin/activate
 # 4. Install dependencies
 pip install -r requirements.txt
 
-# 5. Konfigurasi API key — edit file .env
+# 5. Konfigurasi API key — copy .env.example menjadi .env dan isi API Key
 ```
 
 ### Konfigurasi `.env`
 
 ```env
 GEMINI_API_KEY="your-gemini-api-key-here"
-HEAVY_IO_MODEL="gemini-2.5-flash"
-COMPLEX_REASONING_MODEL="gemini-2.5-flash"
-EMBEDDING_MODEL="gemini-embedding-001"
-DB_PATH="kyb_internal.db"
 ```
 
 ---
 
 ## Cara Penggunaan
 
-### Step 1 — Import Data ke Internal DB
+### Step 1 — Siapkan Data Input
 
-```bash
-# Import profil perusahaan dari AHU (JSON format)
-python src/tools/scraper.py --load-ahu "path/to/ahu_data.json"
-
-# Import daftar sanksi PPATK DTTOT (JSON atau CSV)
-python src/tools/scraper.py --load-ppatk path/to/ppatk_data.json
-python src/tools/scraper.py --load-ppatk path/to/ppatk_data.csv
-
-# (Opsional) Scrape data litigasi SIPP dari web
-python src/tools/scraper.py --court surabaya
-python src/tools/scraper.py --court all
-```
+Letakkan file data di dalam folder `data/input/`:
+1. File AHU perusahaan diletakkan di folder `data/input/ahu/` (format `.json`)
+2. File daftar sanksi PPATK diletakkan di folder `data/input/ppatk/` (format `.json`)
 
 ### Step 2 — Jalankan Pipeline
 
+Jalankan script eksekusi utama:
 ```bash
-# Jalankan secara interaktif (default)
 python run_pipeline.py
-
-# Atau gunakan mode CLI langsung:
-python run_pipeline.py --json data/input/ahu/01__ahu__aneka_bintang_gading.json
-python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
 ```
 
-**Mode 1 — Cari berdasarkan nama (dari folder data/input/ahu/):**
+Anda akan disajikan menu interaktif:
 ```
 📋 PILIH MODE INPUT DATA:
 ────────────────────────────────────────────
@@ -141,25 +119,33 @@ python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
 
    📋 Perusahaan tersedia:
       1. 01__ahu__aneka_bintang_gading
-      2. 02__ahu__mitra_sentosa
 
    Nama perusahaan: ANEKA BINTANG GADING
 ```
 
-**Mode 2 — Input Path File JSON AHU:**
-```
-🔹 Pilih mode (1/2): 2
-
-   Path file JSON AHU: data/input/ahu/01__ahu__aneka_bintang_gading.json
+Atau gunakan **Mode CLI (Bypass Menu)**:
+```bash
+python run_pipeline.py --json data/input/ahu/01__ahu__aneka_bintang_gading.json
+python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
 ```
 
 ---
 
-## Format Data
+## Output
+
+Hasil investigasi akan disimpan di dalam folder root `summary/`:
+- **`summary/json/`** : Hasil investigasi (raw data dan AI scoring) berformat JSON
+- **`summary/pdf/`**  : Hasil Intelligence Report yang siap dicetak berformat PDF
+
+*Data scraping (OSINT dan SIPP) akan disimpan ke dalam folder sementara `data/output/` sebagai cache untuk mencegah panggilan berulang.*
+
+---
+
+## Format Data (Input)
 
 ### AHU JSON
 
-Contoh struktur skema data AHU:
+Contoh struktur skema data AHU yang diperlukan:
 
 ```json
 {
@@ -195,8 +181,6 @@ Contoh struktur skema data AHU:
       "nama": "NAMA LENGKAP",
       "nama_alias": ["ALIAS"],
       "kategori": "DTTOT",
-      "dasar_penetapan": "Keputusan BNPT No. 123/2024",
-      "tanggal_penetapan": "2024-03-01",
       "status": "AKTIF",
       "daftar_asal": "Domestik - BNPT"
     }
@@ -204,112 +188,39 @@ Contoh struktur skema data AHU:
 }
 ```
 
-### SIPP Litigasi JSON (manual override)
-
-```json
-[
-  {
-    "nomor_perkara": "412/Pdt.G/2024/PN.Jkt.Bar",
-    "klasifikasi": "Wanprestasi Kontrak",
-    "pemohon": "PT MAJU SENTOSA",
-    "termohon": "PT NAMA PERUSAHAAN",
-    "status_perkara": "Selesai - Mediasi Berhasil",
-    "tanggal_register": "15 Maret 2024",
-    "nilai_gugatan": "Rp. 2,500,000,000"
-  }
-]
-```
-
----
-
-## Output
-
-Hasil disimpan di folder `output/`:
-
-```
-output/
-├── NAMA_PERUSAHAAN_YYYYMMDD_HHMMSS.json   ← profil + risk assessment
-└── NAMA_PERUSAHAAN_YYYYMMDD_HHMMSS.pdf    ← laporan PDF
-```
-
-### Contoh Output JSON
-
-```json
-{
-  "isProfileComplete": true,
-  "company": { "name": "ANEKA BINTANG GADING", "status": "TERTUTUP" },
-  "shareholders": ["..."],
-  "companyGoals": ["..."],
-  "risk_assessment": {
-    "overall_risk_score": 65,
-    "risk_classification": "Moderate-High Risk",
-    "regulatory_recommendation": "Enhanced Due Diligence (EDD) Required",
-    "ubo_analysis": { "has_ubo_above_threshold": true },
-    "litigation_summary": { "total_cases": 1 },
-    "key_findings": ["Ivan Tanjaya (24.32%) terdeteksi dalam kasus wanprestasi"]
-  },
-  "internet_research": { "overall_internet_risk": "Flag for Review" }
-}
-```
-
----
-
-## Risk Scoring
-
-| Skor | Klasifikasi | Rekomendasi |
-|---|---|---|
-| 1–25 | Low Risk | Setujui |
-| 26–50 | Moderate Risk | Setujui dengan Monitoring |
-| 51–75 | Moderate-High Risk | Enhanced Due Diligence (EDD) Required |
-| 76–100 | High Risk | Tolak / Eskalasi ke Komite |
-
-**Faktor penambah skor:**
-
-| Faktor | Poin |
-|---|---|
-| UBO ≥25% | +15 |
-| Litigasi aktif | +20 |
-| Litigasi selesai | +10 |
-| KBLI berisiko tinggi (kelab malam, bar, alkohol) | +15 |
-| Badan hukum pemegang saham tanpa transparansi | +10 |
-| PPATK DTTOT aktif (domestik) | +40 |
-| PPATK TPPU | +20 |
-| Sanksi internasional (OFAC / UN SC) | +30 |
-| Adverse media — High | +20 |
-| Adverse media — Medium | +10 |
-| PEP terdeteksi | +15 |
-
 ---
 
 ## Struktur Proyek
 
 ```
-customer-profiling-ai/
-├── run_pipeline.py              ← Entry point utama
+kyc-risk-profiling/
+├── run_pipeline.py              ← Main execution entry point
 ├── requirements.txt
-├── .env                         ← API key (jangan di-commit)
-│
+├── .env                         ← File environment (API keys)
+├── data/
+│   ├── input/
+│   │   ├── ahu/                 ← Folder JSON input AHU
+│   │   └── ppatk/               ← Folder JSON input PPATK
+│   ├── output/                  ← Data scraper hasil cache
+│   │   ├── internet_osint/
+│   │   └── sipp_scraped/
+│   └── weight/
+│       └── risk_weights.json    ← Konfigurasi bobot penilaian otomatis
 ├── src/
-│   ├── agents/
-│   │   ├── graph.py             ← AgenticWorkflow orchestrator
-│   │   └── nodes.py             ← Researcher, Drafter, Critic agents
-│   ├── core/
-│   │   ├── config.py            ← Config (API key, DB path, model names)
-│   │   └── state.py             ← PipelineState + semua Pydantic models
-│   ├── tools/
-│   │   ├── scraper.py           ← DB manager + SIPP web scraper
-│   │   ├── ahu_scraper.py       ← AHUScraperTool (query DB)
-│   │   ├── ppatk_tool.py        ← PPATKTool (screening DTTOT)
-│   │   ├── sipp_scraper.py      ← SIPPScraperTool (query DB)
-│   │   ├── internet_researcher.py ← Google Search Grounding
-│   │   ├── report_generator.py  ← JSON + PDF output
-│   │   └── README_SCRAPER.md    ← Dokumentasi scraper & DB manager
-│   └── validation/
-│       └── hcat_tester.py       ← HCAT shadow evaluation
-│
-├── output/                      ← JSON + PDF hasil profiling
-├── validation_reports/          ← Laporan HCAT
-└── kyb_internal.db              ← Internal database (auto-created)
+│   ├── config.py                ← Konfigurasi directory system
+│   ├── data_ingestion.py        ← Membaca & parsing file AHU, UBO, PPATK
+│   ├── reporting.py             ← Menyimpan JSON dan rendering HTML to PDF
+│   ├── agents/                  
+│   │   ├── fusion_agent.py      ← Agent Risk Scoring & Aggregation
+│   │   └── hcat_evaluator.py    
+│   └── scrapers/                
+│       ├── osint_researcher.py  ← Agent Web Search untuk OSINT
+│       └── sipp_scraper.py      ← Agent scraping SIPP litigasi
+├── summary/                     ← Folder Hasil Laporan Terakhir
+│   ├── json/
+│   └── pdf/
+└── templates/                   
+    └── report_template.html     ← Template desain laporan HTML (PDF base)
 ```
 
 ---
@@ -319,36 +230,5 @@ customer-profiling-ai/
 | Regulasi | Relevansi |
 |---|---|
 | POJK No. 12/POJK.01/2017 | Kewajiban KYC/CDD bagi Lembaga Jasa Keuangan |
-| UU No. 8 Tahun 2010 | Pencegahan dan Pemberantasan TPPU |
 | Peraturan PPATK No. 2 Tahun 2023 | Targeted Financial Sanctions (DTTOT) |
 | Perpres No. 13 Tahun 2018 | Penerapan Prinsip Mengenali Pemilik Manfaat (UBO) |
-| UU No. 37 Tahun 2004 | Kepailitan dan PKPU |
-
----
-
-## Troubleshooting
-
-**`ModuleNotFoundError: No module named 'bs4'`**
-```bash
-# Aktifkan venv terlebih dahulu, lalu jalankan:
-.venv\Scripts\activate
-python src/tools/scraper.py --load-ahu ...
-```
-
-**`GEMINI_API_KEY tidak ditemukan`**
-```bash
-# Pastikan file .env ada dan terisi dengan benar
-```
-
-**Data AHU tidak ditemukan saat pipeline berjalan**
-```bash
-# Import dulu ke DB sebelum menjalankan pipeline:
-python src/tools/scraper.py --load-ahu "path/to/ahu_data.json"
-```
-
-**SIPP tidak ada data (0 kasus litigasi)**
-```bash
-# Scrape dari web terlebih dahulu:
-python src/tools/scraper.py --court surabaya
-# Atau upload manual saat pipeline Mode 2
-```
