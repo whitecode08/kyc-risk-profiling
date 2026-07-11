@@ -19,5 +19,10 @@ validation_reports/
 # Sensitive Data
 examples/
 docs/
-templates/
 data/
+
+# Summarization
+summary/
+
+#PDF
+templates/
