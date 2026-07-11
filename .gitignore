@@ -19,10 +19,11 @@ validation_reports/
 # Sensitive Data
 examples/
 docs/
-data/
+data/*
+!data/weight/
 
 # Summarization
 summary/
 
-#PDF
+# PDF
 templates/
