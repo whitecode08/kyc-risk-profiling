@@ -21,6 +21,7 @@ from src.config import (
     GEMINI_API_KEY, HEAVY_IO_MODEL,
     OUTPUT_DIR
 )
+from src.data_ingestion import make_output_filename
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -163,17 +164,19 @@ Hanya sertakan perkara yang BENAR-BENAR terkait dengan "{entity_name}".
 
 # ─── Main Pipeline Function ─────────────────────────────────────────────────
 
-def run_sipp_scraping(company_name: str, shareholder_names: list = None) -> list:
+def run_sipp_scraping(company_name: str, shareholder_names: list = None,
+                      db_number: str = "00") -> list:
     """
     Phase 2: SIPP Scraping & Structuring.
 
     1. Scrape raw text dari portal SIPP (company + shareholders)
     2. LLM structure → JSON
-    3. Save ke data/output/sipp_scraped/<company>.json
+    3. Save ke data/output/sipp_scraped/{db_number}__sipp__{company}.json
 
     Args:
         company_name: Nama perusahaan
         shareholder_names: List nama pemegang saham/pengurus (opsional)
+        db_number: Database number prefix for output naming
 
     Returns:
         List of dict — semua kasus litigasi terstruktur
@@ -206,8 +209,8 @@ def run_sipp_scraping(company_name: str, shareholder_names: list = None) -> list
             print(f"      ℹ️ Portal SIPP tidak dapat diakses untuk {entity}")
 
     # Save to output
-    safe_name = company_name.replace(" ", "_").replace("/", "-")
-    output_path = SIPP_OUTPUT_DIR / f"{safe_name}.json"
+    out_filename = make_output_filename(db_number, "sipp", company_name)
+    output_path = SIPP_OUTPUT_DIR / out_filename
     SIPP_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "w", encoding="utf-8") as f:

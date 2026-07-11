@@ -16,6 +16,7 @@ import jinja2
 import pdfkit
 
 from src.config import TEMPLATE_DIR, SUMMARY_DIR
+from src.data_ingestion import make_output_filename
 
 
 # ─── Jinja2 Environment ──────────────────────────────────────────────────────
@@ -52,12 +53,14 @@ PDFKIT_OPTIONS = {
 
 # ─── JSON Output ─────────────────────────────────────────────────────────────
 
-def save_json(kyb_output_dict: dict, output_dir: str = None) -> str:
+def save_json(kyb_output_dict: dict, db_number: str = "00",
+              output_dir: str = None) -> str:
     """
     Simpan KYBInvestigationOutput sebagai JSON ke summary/json/.
 
     Args:
         kyb_output_dict: dict dari KYBInvestigationOutput.model_dump()
+        db_number: Database number prefix for output naming
         output_dir: Override output directory (default: summary/json/)
 
     Returns:
@@ -67,8 +70,8 @@ def save_json(kyb_output_dict: dict, output_dir: str = None) -> str:
     out.mkdir(parents=True, exist_ok=True)
 
     name = kyb_output_dict.get("corporate_entity", {}).get("name", "UNKNOWN")
-    safe = name.replace(" ", "_").replace("/", "-")
-    filepath = out / f"{safe}.json"
+    filename = make_output_filename(db_number, "summary", name, ext=".json")
+    filepath = out / filename
 
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(kyb_output_dict, f, indent=2, ensure_ascii=False)
@@ -80,18 +83,16 @@ def save_json(kyb_output_dict: dict, output_dir: str = None) -> str:
 # ─── PDF Output ──────────────────────────────────────────────────────────────
 
 def generate_pdf(kyb_output_dict: dict,
+                 db_number: str = "00",
                  hcat_result: dict = None,
                  output_dir: str = None) -> str:
     """
-    Generate PDF report dari KYBInvestigationOutput + HCAT metadata.
-
-    Framework: "Gunakan Jinja2 untuk menginjeksi data JSON ke dalam HTML.
-    Gunakan pustaka pdfkit (dengan wkhtmltopdf) untuk me-render HTML
-    menjadi laporan PDF final."
+    Generate PDF report dari KYBInvestigationOutput.
 
     Args:
         kyb_output_dict: dict dari KYBInvestigationOutput.model_dump()
-        hcat_result: dict hasil HCAT evaluation (opsional)
+        db_number: Database number prefix for output naming
+        hcat_result: dict hasil HCAT evaluation (opsional, tidak digunakan di pipeline utama)
         output_dir: Override output directory
 
     Returns:
@@ -101,8 +102,8 @@ def generate_pdf(kyb_output_dict: dict,
     out.mkdir(parents=True, exist_ok=True)
 
     name = kyb_output_dict.get("corporate_entity", {}).get("name", "UNKNOWN")
-    safe = name.replace(" ", "_").replace("/", "-")
-    filepath = out / f"{safe}.pdf"
+    pdf_filename = make_output_filename(db_number, "summary", name, ext=".pdf")
+    filepath = out / pdf_filename
 
     # Prepare template context
     context = dict(kyb_output_dict)
@@ -124,7 +125,8 @@ def generate_pdf(kyb_output_dict: dict,
     html_content = template.render(**context)
 
     # Save intermediate HTML (untuk debugging)
-    html_path = out / f"{safe}.html"
+    html_filename = make_output_filename(db_number, "summary", name, ext=".html")
+    html_path = out / html_filename
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 

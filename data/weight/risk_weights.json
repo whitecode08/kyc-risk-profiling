@@ -1,6 +1,6 @@
 {
-  "_comment": "Risk Weights Configuration — KYB Intelligence Pipeline v3.0",
-  "_last_updated": "2026-06-01",
+  "_comment": "Risk Weights Configuration — KYB Intelligence Pipeline v3.1 (Calibrated per FATF RBA, POJK 8/2023, PPATK NRA 2023)",
+  "_last_updated": "2026-07-11",
 
   "dimensions": {
     "Ownership_and_Industry_Risk": {
@@ -41,32 +41,50 @@
   },
 
   "score_adders": {
+    "_comment_adders": "Weights calibrated per FATF RBA, POJK 8/2023, PPATK NRA 2023, Wolfsberg Group 2024",
+
     "ubo_above_threshold_25pct": 15,
     "high_risk_kbli_detected": 15,
-    "corporate_shareholder_opaque": 10,
-    "str_history_detected": 20,
-    "dttot_active_sanction": 40,
+
+    "corporate_shareholder_opaque": 15,
+    "nominee_shareholder_detected": 15,
+    "shell_company_indicators": 20,
+
+    "str_history_detected": 25,
+    "dttot_active_sanction": 50,
     "dttot_inactive_sanction": 20,
+    "international_sanctions_ofac_un": 50,
+
     "active_litigation_perdata": 10,
     "active_litigation_pidana": 20,
-    "bankruptcy_pkpu": 25,
+    "bankruptcy_pkpu": 30,
+    "multiple_active_pkpu_filings": 10,
+
     "adverse_media_high_severity": 20,
-    "adverse_media_medium_severity": 10,
-    "pep_detected": 15,
-    "international_sanctions_ofac_un": 30,
-    "foreign_shareholder_high_risk_country": 15
+    "adverse_media_medium_severity": 8,
+
+    "pep_detected": 20,
+
+    "foreign_shareholder_high_risk_country": 15,
+    "geographic_high_risk_country_operations": 15,
+    "transaction_based_ml_typology_detected": 20
   },
 
   "kbli_high_risk": {
+    "_comment_kbli": "Diperluas per FATF TBML Guidance dan PPATK NRA 2023 — real estate, seni/antik, dan jasa keuangan lain ditambahkan sebagai sektor TBML prioritas",
     "codes": [
       "56301", "93291", "93292", "47221", "47222",
       "93299", "64110", "64120", "64190", "64910",
-      "64920", "64990", "66110", "66120"
+      "64920", "64990", "66110", "66120", "66190",
+      "68100", "68200", "68209",
+      "47773"
     ],
     "categories": {
       "cash_intensive": ["56301", "93291", "93292", "47221"],
-      "financial_services": ["64110", "64120", "64190", "64910", "64920", "64990"],
-      "gaming_entertainment": ["93291", "93292", "93299"]
+      "financial_services": ["64110", "64120", "64190", "64910", "64920", "64990", "66110", "66120", "66190"],
+      "gaming_entertainment": ["93291", "93292", "93299"],
+      "real_estate_tbml": ["68100", "68200", "68209"],
+      "trade_based_ml": ["47773"]
     },
     "labels": {
       "56301": "BAR — Cash-Intensive, risiko TPPU tinggi",
@@ -74,7 +92,12 @@
       "93292": "KARAOKE — Cash-Intensive, risiko TPPU tinggi",
       "47221": "PERDAGANGAN ECERAN MINUMAN BERALKOHOL — Cash-Intensive",
       "64110": "BANK SENTRAL — Risiko sistemik tinggi",
-      "64120": "BANK UMUM — Sektor keuangan teregulasi ketat"
+      "64120": "BANK UMUM — Sektor keuangan teregulasi ketat",
+      "66190": "AKTIVITAS JASA KEUANGAN LAINNYA — Broad catch-all, perlu review manual",
+      "68100": "REAL ESTATE SENDIRI — Sektor TBML prioritas per FATF NRA",
+      "68200": "REAL ESTATE DISEWA/DIOPERASIKAN — Sektor TBML prioritas per FATF NRA",
+      "68209": "REAL ESTATE LAINNYA — Sektor TBML",
+      "47773": "PERDAGANGAN ECERAN BARANG ANTIK/SENI — Risiko TBML tinggi"
     }
   },
 
@@ -88,7 +111,11 @@
     "PEP": "Politically Exposed Person",
     "OFAC_SDN": "Terdeteksi dalam OFAC SDN List (Sanksi Internasional)",
     "UN_SECURITY_COUNCIL": "Terdeteksi dalam UN Security Council Sanctions List",
-    "CORPORATE_UBO": "Pemegang saham korporasi — UBO layer kedua belum teridentifikasi"
+    "CORPORATE_UBO": "Pemegang saham korporasi — UBO layer kedua belum teridentifikasi",
+    "NOMINEE_SHAREHOLDER": "Terindikasi penggunaan nominee shareholder — tidak mencerminkan pemilik manfaat sesungguhnya (Perpres 13/2018)",
+    "SHELL_COMPANY": "Terindikasi perusahaan cangkang tanpa kegiatan usaha nyata",
+    "TBML_SECTOR": "Kegiatan usaha termasuk sektor risiko Trade-Based Money Laundering (TBML) per FATF",
+    "HIGH_RISK_GEOGRAPHY": "Pemegang saham atau operasi di yurisdiksi berisiko tinggi (FATF Grey/Black List)"
   },
 
   "recommendation_actions": {

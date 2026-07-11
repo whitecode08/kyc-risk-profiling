@@ -19,6 +19,7 @@ from src.config import (
     GEMINI_API_KEY, HEAVY_IO_MODEL,
     OUTPUT_DIR
 )
+from src.data_ingestion import make_output_filename
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -155,7 +156,8 @@ Jika TIDAK ada temuan negatif, set arrays kosong dan overall_internet_risk = "Cl
 # ─── Main Pipeline Function ─────────────────────────────────────────────────
 
 def run_osint_research(company_name: str, top5_ubo: list,
-                       kbli_codes: list = None) -> dict:
+                       kbli_codes: list = None,
+                       db_number: str = "00") -> dict:
     """
     Phase 3: Internet Checking (OSINT) — Corporate & UBO.
 
@@ -166,6 +168,7 @@ def run_osint_research(company_name: str, top5_ubo: list,
         company_name: Nama perusahaan
         top5_ubo: List of dict Top 5 UBO (dari data_ingestion.extract_top5_ubo)
         kbli_codes: List kode KBLI (opsional, untuk konteks)
+        db_number: Database number prefix for output naming
 
     Returns:
         Dict hasil OSINT terstruktur (saved + returned)
@@ -210,8 +213,8 @@ def run_osint_research(company_name: str, top5_ubo: list,
     parsed_result["entities_searched"] = list(raw_summaries.keys())
 
     # 4. Save to output
-    safe_name = company_name.replace(" ", "_").replace("/", "-")
-    output_path = OSINT_OUTPUT_DIR / f"{safe_name}_full_osint.json"
+    out_filename = make_output_filename(db_number, "osint", company_name)
+    output_path = OSINT_OUTPUT_DIR / out_filename
     OSINT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "w", encoding="utf-8") as f:

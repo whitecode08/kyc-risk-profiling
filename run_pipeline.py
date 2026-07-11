@@ -1,17 +1,16 @@
 """
 AI-KYB Intelligence Pipeline — Main Execution Script
 ======================================================
-6-Phase Pipeline sesuai KYB Python Implementation Framework:
+5-Phase Pipeline sesuai KYB Python Implementation Framework v3.1:
 
   Phase 1: Data Ingestion & Configuration
   Phase 2: SIPP Scraping & Structuring
   Phase 3: Internet Checking (OSINT) — Corporate & UBO
   Phase 4: Agentic Fusion & Risk Scoring
-  Phase 5: HCAT Evaluation (Validation)
-  Phase 6: PDF Generation
+  Phase 5: Report Generation (JSON + PDF)
 
 Usage:
-  python run_pipeline.py --json data/input/ahu/01__aneka_bintang_gading.json
+  python run_pipeline.py --json data/input/ahu/01__ahu__aneka_bintang_gading.json
   python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
   python run_pipeline.py --interactive
   python run_pipeline.py  (default: interactive menu)
@@ -28,12 +27,12 @@ sys.stdout.reconfigure(encoding="utf-8")
 from src.data_ingestion import (
     load_ahu_json, find_ahu_by_name, scan_ahu_folder,
     extract_top5_ubo, get_company_metadata,
-    load_all_ppatk, screen_ppatk,
+    load_all_ppatk, screen_ppatk, make_output_filename
 )
+from src.config import OUTPUT_DIR
 from src.scrapers.sipp_scraper import run_sipp_scraping
 from src.scrapers.osint_researcher import run_osint_research
 from src.agents.fusion_agent import run_fusion, KYBInvestigationOutput
-from src.agents.hcat_evaluator import HCATEvaluator
 from src.reporting import save_json, generate_pdf
 
 
@@ -45,24 +44,25 @@ def print_banner():
     print()
     print("╔" + "═" * 62 + "╗")
     print("║" + "  AI-KYB INTELLIGENCE SYSTEM  ".center(62) + "║")
-    print("║" + "  Know Your Business — Autonomous Risk Profiling v3.0  ".center(62) + "║")
+    print("║" + "  Know Your Business — Autonomous Risk Profiling v3.1  ".center(62) + "║")
     print("╚" + "═" * 62 + "╝")
     print()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Core Pipeline (6 Phases)
+# Core Pipeline (5 Phases)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_pipeline(ahu_data: dict) -> dict:
+def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
     """
-    Jalankan pipeline 6-phase untuk satu perusahaan.
+    Jalankan pipeline 5-phase untuk satu perusahaan.
 
     Args:
         ahu_data: dict profil AHU yang sudah dimuat
+        db_number: Database number prefix for output naming
 
     Returns:
-        dict { kyb_output, hcat_result, json_path, pdf_path }
+        dict { kyb_output, json_path, pdf_path }
     """
     start_ms = int(time.time() * 1000)
     company_name = ahu_data.get("company", {}).get("name", "UNKNOWN")
@@ -107,8 +107,17 @@ def run_pipeline(ahu_data: dict) -> dict:
     print("⚖️  PHASE 2: SIPP SCRAPING & STRUCTURING")
     print("=" * 62)
 
-    shareholder_names = [ubo.get("name", "") for ubo in top5_ubo if ubo.get("name")]
-    sipp_cases = run_sipp_scraping(company_name, shareholder_names)
+    sipp_filename = make_output_filename(db_number, "sipp", company_name, ext=".json")
+    sipp_path = OUTPUT_DIR / "sipp_scraped" / sipp_filename
+    
+    if sipp_path.exists():
+        print(f"   ♻️ Cache SIPP ditemukan! Melewati scraping untuk menghemat biaya.")
+        print(f"   📂 Memuat dari: {sipp_path}")
+        with open(sipp_path, "r", encoding="utf-8") as f:
+            sipp_cases = json.load(f)
+    else:
+        shareholder_names = [ubo.get("name", "") for ubo in top5_ubo if ubo.get("name")]
+        sipp_cases = run_sipp_scraping(company_name, shareholder_names, db_number=db_number)
 
     # ──────────────────────────────────────────────────────────────────────
     # PHASE 3: Internet Checking (OSINT) — Corporate & UBO
@@ -117,7 +126,16 @@ def run_pipeline(ahu_data: dict) -> dict:
     print("🌐  PHASE 3: INTERNET CHECKING (OSINT)")
     print("=" * 62)
 
-    osint_result = run_osint_research(company_name, top5_ubo, kbli_codes)
+    osint_filename = make_output_filename(db_number, "osint", company_name, ext=".json")
+    osint_path = OUTPUT_DIR / "internet_osint" / osint_filename
+    
+    if osint_path.exists():
+        print(f"   ♻️ Cache OSINT ditemukan! Melewati pencarian internet untuk menghemat biaya.")
+        print(f"   📂 Memuat dari: {osint_path}")
+        with open(osint_path, "r", encoding="utf-8") as f:
+            osint_result = json.load(f)
+    else:
+        osint_result = run_osint_research(company_name, top5_ubo, kbli_codes, db_number=db_number)
 
     # ──────────────────────────────────────────────────────────────────────
     # PHASE 4: Agentic Fusion & Risk Scoring
@@ -133,31 +151,14 @@ def run_pipeline(ahu_data: dict) -> dict:
     kyb_dict = kyb_output.model_dump()
 
     # ──────────────────────────────────────────────────────────────────────
-    # PHASE 5: HCAT Evaluation (Validation)
-    # ──────────────────────────────────────────────────────────────────────
-    hcat_result = None
-    try:
-        raw_contexts = [
-            json.dumps(ahu_data, ensure_ascii=False),
-            json.dumps(ppatk_summary, ensure_ascii=False),
-            json.dumps(sipp_cases, ensure_ascii=False),
-            json.dumps(osint_result, ensure_ascii=False),
-        ]
-
-        evaluator = HCATEvaluator()
-        hcat_result = evaluator.run_evaluation(raw_contexts, kyb_dict)
-    except Exception as e:
-        print(f"\n   ⚠️ HCAT evaluation dilewati: {e}")
-
-    # ──────────────────────────────────────────────────────────────────────
-    # PHASE 6: PDF Generation
+    # PHASE 5: Report Generation (JSON + PDF)
     # ──────────────────────────────────────────────────────────────────────
     print("\n" + "=" * 62)
-    print("📄  PHASE 6: PDF GENERATION")
+    print("📄  PHASE 5: REPORT GENERATION")
     print("=" * 62)
 
-    json_path = save_json(kyb_dict)
-    pdf_path = generate_pdf(kyb_dict, hcat_result=hcat_result)
+    json_path = save_json(kyb_dict, db_number=db_number)
+    pdf_path = generate_pdf(kyb_dict, db_number=db_number)
 
     # ──────────────────────────────────────────────────────────────────────
     # SUMMARY
@@ -181,14 +182,8 @@ def run_pipeline(ahu_data: dict) -> dict:
     print(f"   Contamination Paths  : {spider.total_contamination_paths}")
     print(f"   Rekomendasi          : {kyb_output.ai_recommendation.action}")
 
-    if hcat_result:
-        print(f"   HCAT Confidence      : {hcat_result.get('hcat_confidence_pct', '?')}%")
-
     print(f"\n   ✅ JSON  : {json_path}")
     print(f"   ✅ PDF   : {pdf_path}")
-
-    if hcat_result:
-        print(f"   ✅ HCAT  : validation_reports/")
 
     # Intermediate outputs
     print(f"   📂 SIPP  : data/output/sipp_scraped/")
@@ -200,7 +195,6 @@ def run_pipeline(ahu_data: dict) -> dict:
 
     return {
         "kyb_output": kyb_dict,
-        "hcat_result": hcat_result,
         "json_path": json_path,
         "pdf_path": pdf_path,
     }
@@ -213,22 +207,22 @@ def run_pipeline(ahu_data: dict) -> dict:
 def mode_json(json_path: str):
     """Mode CLI: Load dari file JSON AHU."""
     print(f"\n📂 Memuat file AHU: {json_path}")
-    ahu_data = load_ahu_json(json_path)
+    ahu_data, db_number = load_ahu_json(json_path)
     company = ahu_data.get("company", {}).get("name", "?")
-    print(f"🎯 Target: {company}")
+    print(f"🎯 Target: {company} (DB #{db_number})")
     print("─" * 62)
-    return run_pipeline(ahu_data)
+    return run_pipeline(ahu_data, db_number=db_number)
 
 
 def mode_company(company_name: str, nib: str = None):
     """Mode CLI: Cari di folder data/input/ahu/ berdasarkan nama."""
     print(f"\n🎯 Target: {company_name}" + (f" (NIB: {nib})" if nib else ""))
-    ahu_data = find_ahu_by_name(company_name)
+    ahu_data, db_number = find_ahu_by_name(company_name)
     if "error" in ahu_data:
         print(f"\n❌ {ahu_data['error']}")
         sys.exit(1)
     print("─" * 62)
-    return run_pipeline(ahu_data)
+    return run_pipeline(ahu_data, db_number=db_number)
 
 
 def mode_interactive():
@@ -258,7 +252,7 @@ def mode_interactive():
             print("   ⚠️ Nama wajib diisi!")
             sys.exit(1)
 
-        ahu_data = find_ahu_by_name(company)
+        ahu_data, db_number = find_ahu_by_name(company)
         if "error" in ahu_data:
             print(f"\n❌ {ahu_data['error']}")
             sys.exit(1)
@@ -268,12 +262,12 @@ def mode_interactive():
         if not os.path.isfile(path):
             print(f"   ⚠️ File tidak ditemukan: {path}")
             sys.exit(1)
-        ahu_data = load_ahu_json(path)
+        ahu_data, db_number = load_ahu_json(path)
 
     company = ahu_data.get("company", {}).get("name", "?")
-    print(f"\n🎯 Target: {company}")
+    print(f"\n🎯 Target: {company} (DB #{db_number})")
     print("─" * 62)
-    return run_pipeline(ahu_data)
+    return run_pipeline(ahu_data, db_number=db_number)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -282,11 +276,11 @@ def mode_interactive():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AI-KYB Intelligence Pipeline v3.0",
+        description="AI-KYB Intelligence Pipeline v3.1",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Contoh:
-  python run_pipeline.py --json data/input/ahu/01__aneka_bintang_gading.json
+  python run_pipeline.py --json data/input/ahu/01__ahu__aneka_bintang_gading.json
   python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
   python run_pipeline.py --interactive
         """,
