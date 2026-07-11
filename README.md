@@ -121,39 +121,36 @@ python src/tools/scraper.py --court all
 ### Step 2 — Jalankan Pipeline
 
 ```bash
+# Jalankan secara interaktif (default)
 python run_pipeline.py
+
+# Atau gunakan mode CLI langsung:
+python run_pipeline.py --json data/input/ahu/01__ahu__aneka_bintang_gading.json
+python run_pipeline.py --company "ANEKA BINTANG GADING" --nib 1234567890
 ```
 
-**Mode 1 — Auto Lookup** (data sudah diimport ke DB):
+**Mode 1 — Cari berdasarkan nama (dari folder data/input/ahu/):**
 ```
 📋 PILIH MODE INPUT DATA:
-  [1] NIB + Nama Perusahaan (Auto-Lookup)
-  [2] Upload Manual (PDF/JSON/CSV)
+────────────────────────────────────────────
+  [1] Cari nama perusahaan di folder data/input/ahu/
+  [2] Input path file JSON AHU
+────────────────────────────────────────────
 
-Pilih: 1
-NIB (Nomor Induk Berusaha): [kosongkan jika tidak ada]
-Nama Perusahaan: ANEKA BINTANG GADING
+🔹 Pilih mode (1/2): 1
+
+   📋 Perusahaan tersedia:
+      1. 01__ahu__aneka_bintang_gading
+      2. 02__ahu__mitra_sentosa
+
+   Nama perusahaan: ANEKA BINTANG GADING
 ```
 
-**Mode 2 — Upload Manual:**
+**Mode 2 — Input Path File JSON AHU:**
 ```
-Pilih: 2
-Nama Perusahaan: ANEKA BINTANG GADING
+🔹 Pilih mode (1/2): 2
 
-DATA AHU:
-  [1] Upload file JSON
-  [2] Upload file CSV
-  [3] Upload file PDF
-  [4] Skip
-
-DATA SIPP:
-  [1] Upload file JSON
-  [2] Skip (gunakan data dari DB scraping)
-
-DATA PPATK DTTOT:
-  [1] Upload file JSON
-  [2] Upload file CSV
-  [3] Skip
+   Path file JSON AHU: data/input/ahu/01__ahu__aneka_bintang_gading.json
 ```
 
 ---
