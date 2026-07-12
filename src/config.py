@@ -28,20 +28,31 @@ SUMMARY_DIR = ROOT_DIR / "summary"
 (SUMMARY_DIR / "pdf").mkdir(parents=True, exist_ok=True)
 
 # ─── API Keys ─────────────────────────────────────────────────────────────────
+# NOTE: The anthropic Python SDK reads ANTHROPIC_API_KEY by default.
+# OpenModel.ai uses ANTHROPIC_AUTH_TOKEN (same value). We export both
+# so the Anthropic() client can be initialized explicitly in each module.
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GOOGLE_SEARCH_ENGINE_ID = os.getenv("SEARCH_ENGINE_ID", "")
 
-if not GEMINI_API_KEY:
+# ANTHROPIC_AUTH_TOKEN is the OpenModel token (om-xxxx).
+# We expose it as ANTHROPIC_API_KEY so the SDK picks it up correctly.
+ANTHROPIC_API_KEY = (
+    os.getenv("ANTHROPIC_AUTH_TOKEN") or
+    os.getenv("ANTHROPIC_API_KEY") or
+    ""
+)
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.openmodel.ai")
+
+if not ANTHROPIC_API_KEY:
     raise ValueError(
-        "GEMINI_API_KEY tidak ditemukan di file .env. "
+        "ANTHROPIC_AUTH_TOKEN tidak ditemukan di file .env. "
         "Harap isi terlebih dahulu."
     )
 
 # ─── Model Selection ─────────────────────────────────────────────────────────
 
-HEAVY_IO_MODEL = os.getenv("HEAVY_IO_MODEL", "gemini-2.5-flash")
-COMPLEX_REASONING_MODEL = os.getenv("COMPLEX_REASONING_MODEL", "gemini-2.5-flash")
+HEAVY_IO_MODEL = os.getenv("ANTHROPIC_MODEL", os.getenv("HEAVY_IO_MODEL", "deepseek-v4-flash"))
+COMPLEX_REASONING_MODEL = os.getenv("ANTHROPIC_MODEL", os.getenv("COMPLEX_REASONING_MODEL", "deepseek-v4-flash"))
 
 # ─── Risk Weights ─────────────────────────────────────────────────────────────
 
@@ -63,3 +74,45 @@ def _load_risk_weights() -> dict:
         }
 
 RISK_WEIGHTS = _load_risk_weights()
+
+
+# ─── LLM Response Helper ──────────────────────────────────────────────────────
+
+def extract_text_from_response(response) -> str:
+    """
+    Safely extract the text content from an Anthropic API response.
+
+    Models like deepseek-v4 (with reasoning/thinking enabled) may return
+    a ThinkingBlock as the first content block before the actual TextBlock.
+    Using response.content[0].text directly will raise AttributeError in
+    that case. This helper scans all blocks and returns the first one that
+    has a .text attribute (i.e. the real TextBlock).
+
+    Args:
+        response: Anthropic Message response object
+
+    Returns:
+        str: The text content from the first TextBlock found, or fallback to thinking block
+
+    Raises:
+        ValueError: If no text can be extracted or if the response was truncated
+    """
+    # 1. Try to get the actual TextBlock
+    for block in response.content:
+        if hasattr(block, "text") and block.text.strip():
+            return block.text
+            
+    # 2. Check if we hit token limit before outputting text
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        raise ValueError("Response truncated (stop_reason=max_tokens) sebelum mengeluarkan teks output. "
+                         "Pertimbangkan menambah max_tokens atau menginstruksikan LLM agar lebih ringkas.")
+
+    # 3. Fallback: if it only outputted thinking and stopped normally
+    for block in response.content:
+        if hasattr(block, "thinking") and block.thinking.strip():
+            return block.thinking
+
+    raise ValueError(
+        f"No text could be extracted. "
+        f"Block types: {[type(b).__name__ for b in response.content]}"
+    )

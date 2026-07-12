@@ -111,7 +111,7 @@
     "PEP": "Politically Exposed Person",
     "OFAC_SDN": "Terdeteksi dalam OFAC SDN List (Sanksi Internasional)",
     "UN_SECURITY_COUNCIL": "Terdeteksi dalam UN Security Council Sanctions List",
-    "CORPORATE_UBO": "Pemegang saham korporasi — UBO layer kedua belum teridentifikasi",
+    "CORPORATE_UBO": "Pemegang saham korporasi (PT/CV) — UBO layer kedua belum teridentifikasi",
     "NOMINEE_SHAREHOLDER": "Terindikasi penggunaan nominee shareholder — tidak mencerminkan pemilik manfaat sesungguhnya (Perpres 13/2018)",
     "SHELL_COMPANY": "Terindikasi perusahaan cangkang tanpa kegiatan usaha nyata",
     "TBML_SECTOR": "Kegiatan usaha termasuk sektor risiko Trade-Based Money Laundering (TBML) per FATF",

@@ -12,16 +12,15 @@ import json
 import time
 from pathlib import Path
 
-from google import genai
-from google.genai import types
+from anthropic import Anthropic
 
 from src.config import (
-    GEMINI_API_KEY, HEAVY_IO_MODEL,
-    OUTPUT_DIR
+    ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, HEAVY_IO_MODEL,
+    OUTPUT_DIR, extract_text_from_response
 )
 from src.data_ingestion import make_output_filename
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
 
 OSINT_OUTPUT_DIR = OUTPUT_DIR / "internet_osint"
 
@@ -42,27 +41,44 @@ Anda adalah analis KYB/AML senior. Lakukan riset internet mendalam untuk entitas
 TARGET: {entity_name}
 {f"KONTEKS: {context}" if context else ""}
 
-INSTRUKSI:
-1. Cari berita negatif: penipuan, fraud, skandal, korupsi, pelanggaran hukum
-2. Cek daftar sanksi: OFAC SDN, UN Security Council, EU Sanctions, PPATK DTTOT
-3. Cek PEP (Politically Exposed Person): pejabat publik, politisi, TNI/Polri
-4. Verifikasi legitimasi bisnis (jika entitas korporasi)
+Lakukan pencarian seolah-olah Anda mengetik query berikut di Google, lalu laporkan hasilnya:
+- "{entity_name} kasus"
+- "{entity_name} skandal"
+- "{entity_name} penipuan"
+- "{entity_name} dugaan korupsi"
+- "{entity_name} pelanggaran hukum"
+- "{entity_name} pailit"
+- "{entity_name} gugatan"
+- "{entity_name} terpidana"
+- "{entity_name} PPATK"
+- "{entity_name} OJK sanksi"
 
-Berikan ringkasan komprehensif. Jika TIDAK ditemukan informasi negatif,
-nyatakan eksplisit bahwa entitas bersih.
+INSTRUKSI:
+1. Cari berita negatif secara agresif: penipuan, fraud, skandal, dugaan korupsi,
+   pelanggaran hukum, terpidana, pembekuan aset, pencucian uang
+2. Cek daftar sanksi internasional: OFAC SDN, UN Security Council, EU Sanctions, PPATK DTTOT
+3. Jika individu: cek PEP (pejabat publik, politisi, anggota DPR/MPR, TNI/Polri aktif,
+   keluarga pejabat, BUMN direksi)
+4. Jika korporasi: verifikasi legitimasi, sengketa bisnis, gugatan perdata/pidana
+5. Cari di media Indonesia: Kompas, Tempo, DetikNews, CNN Indonesia, Kumparan,
+   Tirto, CNBC Indonesia, Bisnis.com
+
+LAPORAN WAJIB mencakup:
+- Daftar temuan negatif (jika ada) beserta sumber dan tanggal
+- Status di daftar sanksi (confirmed clean atau found)
+- Status PEP (jika individu)
+- Jika TIDAK ada temuan negatif sama sekali, nyatakan EKSPLISIT: "Bersih — tidak ditemukan adverse media."
 """
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            response = client.messages.create(
                 model=HEAVY_IO_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(google_search=types.GoogleSearch())],
-                    temperature=0.1,
-                ),
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
-            return response.text
+            return extract_text_from_response(response)
         except Exception as e:
             if attempt < 2:
                 time.sleep(3)
@@ -126,19 +142,29 @@ Perusahaan: {company_name}
 }}
 
 Jika TIDAK ada temuan negatif, set arrays kosong dan overall_internet_risk = "Clean".
+PENTING: pep_flags HANYA boleh berisi entitas yang menjadi subjek pencarian dalam sesi ini,
+yaitu: {company_name} dan para pemegang saham/pengurus yang dicari. JANGAN sertakan
+pejabat publik atau tokoh lain yang disebutkan sebagai konteks berita namun BUKAN
+salah satu dari entitas yang diteliti.
 """
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            response = client.messages.create(
                 model=HEAVY_IO_MODEL,
-                contents=parse_prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                ),
+                max_tokens=4096,
+                messages=[{"role": "user", "content": parse_prompt}],
+                temperature=0.1,
             )
-            return json.loads(response.text)
+            text = extract_text_from_response(response)
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                import re
+                match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+                if match:
+                    return json.loads(match.group(1))
+                raise
         except Exception as e:
             if attempt < 2:
                 time.sleep(2)
@@ -155,18 +181,18 @@ Jika TIDAK ada temuan negatif, set arrays kosong dan overall_internet_risk = "Cl
 
 # ─── Main Pipeline Function ─────────────────────────────────────────────────
 
-def run_osint_research(company_name: str, top5_ubo: list,
+def run_osint_research(company_name: str, all_ubo: list,
                        kbli_codes: list = None,
                        db_number: str = "00") -> dict:
     """
     Phase 3: Internet Checking (OSINT) — Corporate & UBO.
 
-    Framework: "Lakukan perulangan (loop) untuk Top 5 Pemegang Saham.
+    Framework: "Lakukan perulangan (loop) untuk Top 5 Pemegang Saham personal dan Top 5 Pemegang Saham corporate.
     Lakukan search untuk masing-masing nama individu/korporasi tersebut."
 
     Args:
         company_name: Nama perusahaan
-        top5_ubo: List of dict Top 5 UBO (dari data_ingestion.extract_top5_ubo)
+        all_ubo: List of dict semua UBO (dari data_ingestion.extract_all_ubo)
         kbli_codes: List kode KBLI (opsional, untuk konteks)
         db_number: Database number prefix for output naming
 
@@ -185,8 +211,13 @@ def run_osint_research(company_name: str, top5_ubo: list,
         context=f"Perusahaan Indonesia. {kbli_context}"
     )
 
-    # 2. UBO OSINT — loop per individu
-    for ubo in top5_ubo:
+    # 2. UBO OSINT — loop per individu/korporasi
+    personal_ubos = [u for u in all_ubo if not u.get("is_corporate")]
+    corporate_ubos = [u for u in all_ubo if u.get("is_corporate")]
+    
+    target_ubos = personal_ubos[:5] + corporate_ubos[:5]
+    
+    for ubo in target_ubos:
         name = ubo.get("name", "")
         if not name:
             continue

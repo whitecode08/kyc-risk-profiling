@@ -26,7 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 from src.data_ingestion import (
     load_ahu_json, find_ahu_by_name, scan_ahu_folder,
-    extract_top5_ubo, get_company_metadata,
+    extract_all_ubo, get_company_metadata,
     load_all_ppatk, screen_ppatk, make_output_filename
 )
 from src.config import OUTPUT_DIR
@@ -74,8 +74,8 @@ def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
     print("📥  PHASE 1: DATA INGESTION & CONFIGURATION")
     print("=" * 62)
 
-    # Extract Top 5 UBO
-    top5_ubo = extract_top5_ubo(ahu_data)
+    # Extract All UBOs
+    all_ubo = extract_all_ubo(ahu_data)
     metadata = get_company_metadata(ahu_data)
 
     # Load PPATK entries
@@ -83,7 +83,7 @@ def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
 
     # Screen PPATK
     entities_to_check = [company_name]
-    for ubo in top5_ubo:
+    for ubo in all_ubo:
         if ubo.get("name"):
             entities_to_check.append(ubo["name"])
 
@@ -116,8 +116,9 @@ def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
         with open(sipp_path, "r", encoding="utf-8") as f:
             sipp_cases = json.load(f)
     else:
-        shareholder_names = [ubo.get("name", "") for ubo in top5_ubo if ubo.get("name")]
-        sipp_cases = run_sipp_scraping(company_name, shareholder_names, db_number=db_number)
+        # Only pass corporate UBO names to SIPP
+        corporate_ubos = [ubo.get("name", "") for ubo in all_ubo if ubo.get("name") and ubo.get("is_corporate")]
+        sipp_cases = run_sipp_scraping(company_name, corporate_ubos, db_number=db_number)
 
     # ──────────────────────────────────────────────────────────────────────
     # PHASE 3: Internet Checking (OSINT) — Corporate & UBO
@@ -135,7 +136,7 @@ def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
         with open(osint_path, "r", encoding="utf-8") as f:
             osint_result = json.load(f)
     else:
-        osint_result = run_osint_research(company_name, top5_ubo, kbli_codes, db_number=db_number)
+        osint_result = run_osint_research(company_name, all_ubo, kbli_codes, db_number=db_number)
 
     # ──────────────────────────────────────────────────────────────────────
     # PHASE 4: Agentic Fusion & Risk Scoring
@@ -149,6 +150,10 @@ def run_pipeline(ahu_data: dict, db_number: str = "00") -> dict:
     )
 
     kyb_dict = kyb_output.model_dump()
+    kyb_dict["sipp_cases"] = sipp_cases
+    kyb_dict["ppatk_summary"] = ppatk_summary
+    kyb_dict["osint_result"] = osint_result
+    kyb_dict["ahu_data"] = ahu_data
 
     # ──────────────────────────────────────────────────────────────────────
     # PHASE 5: Report Generation (JSON + PDF)

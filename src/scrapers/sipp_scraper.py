@@ -13,17 +13,17 @@ import re
 from pathlib import Path
 
 import requests
+from requests.exceptions import Timeout, ConnectionError as ReqConnectionError
 from bs4 import BeautifulSoup
-from google import genai
-from google.genai import types
+from anthropic import Anthropic
 
 from src.config import (
-    GEMINI_API_KEY, HEAVY_IO_MODEL,
-    OUTPUT_DIR
+    ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, HEAVY_IO_MODEL,
+    OUTPUT_DIR, extract_text_from_response
 )
 from src.data_ingestion import make_output_filename
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
 
 # ─── SIPP Portal Config ──────────────────────────────────────────────────────
 
@@ -76,9 +76,19 @@ def scrape_sipp_raw(entity_name: str) -> str:
             session = requests.Session()
             session.headers.update(HEADERS)
 
-            resp = session.get(
+            # 1. Access homepage to get the CSRF/enc token
+            home_resp = session.get(court['base_url'], timeout=15)
+            enc_value = ""
+            if home_resp.status_code == 200:
+                soup_home = BeautifulSoup(home_resp.text, "lxml")
+                enc_input = soup_home.find("input", {"name": "enc"})
+                if enc_input:
+                    enc_value = enc_input.get("value", "")
+
+            # 2. Perform POST request with the token
+            resp = session.post(
                 search_url,
-                params={"search": entity_name},
+                data={"search_keyword": entity_name, "enc": enc_value},
                 timeout=15
             )
 
@@ -91,6 +101,9 @@ def scrape_sipp_raw(entity_name: str) -> str:
 
             time.sleep(2)  # Rate limiting
 
+        except (Timeout, ReqConnectionError) as e:
+            print(f"      ⚠️ SIPP {court['name']}: {type(e).__name__} — {e}")
+            continue
         except Exception as e:
             print(f"      ⚠️ SIPP {court['name']}: {e}")
             continue
@@ -122,35 +135,51 @@ yang berkaitan dengan entitas "{entity_name}".
 {raw_text[:4000]}
 
 === OUTPUT FORMAT ===
-Kembalikan JSON array dengan format:
-[
-  {{
-    "nomor_perkara": "nomor perkara",
-    "court": "nama pengadilan",
-    "tanggal_register": "tanggal",
-    "klasifikasi": "Kepailitan/PKPU/Perdata/Pidana/dll",
-    "pemohon": "nama pemohon",
-    "termohon": "nama termohon",
-    "status_perkara": "Putus/Proses/Mediasi/dll",
-    "lama_proses": "durasi jika ada"
-  }}
-]
+Kembalikan JSON dengan format object yang berisi array "cases":
+{{
+  "cases": [
+    {{
+      "nomor_perkara": "nomor perkara",
+      "court": "nama pengadilan",
+      "tanggal_register": "tanggal",
+      "klasifikasi": "Kepailitan/PKPU/Perdata/Pidana/dll",
+      "pemohon": "nama pemohon",
+      "termohon": "nama termohon",
+      "status_perkara": "Putus/Proses/Mediasi/dll",
+      "lama_proses": "durasi jika ada",
+      "deskripsi_perkara": "isi petitum atau detil pokok perkara secara ringkas"
+    }}
+  ]
+}}
 
-Jika tidak ada perkara yang ditemukan, kembalikan array kosong [].
+Jika tidak ada perkara yang ditemukan, kembalikan array kosong {{"cases": []}}.
 Hanya sertakan perkara yang BENAR-BENAR terkait dengan "{entity_name}".
 """
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            response = client.messages.create(
                 model=HEAVY_IO_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                ),
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
-            result = json.loads(response.text)
+            
+            text = extract_text_from_response(response)
+            try:
+                result = json.loads(text)
+            except json.JSONDecodeError:
+                # Try extracting JSON block from markdown
+                import re
+                match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+                result = json.loads(match.group(1)) if match else []
+                
+            # If the model wrapped it in an object like {"cases": [...]}, extract it
+            if isinstance(result, dict):
+                for key in result:
+                    if isinstance(result[key], list):
+                        result = result[key]
+                        break
             if isinstance(result, list):
                 return result
             return []
@@ -193,7 +222,11 @@ def run_sipp_scraping(company_name: str, shareholder_names: list = None,
             continue
 
         print(f"      🔍 Mencari: {entity}")
-        raw_text = scrape_sipp_raw(entity)
+        try:
+            raw_text = scrape_sipp_raw(entity)
+        except Exception as e:
+            print(f"      ⚠️ SIPP scrape gagal untuk {entity}: {e}")
+            continue
 
         if raw_text:
             cases = structure_sipp_with_llm(raw_text, entity)

@@ -1,7 +1,5 @@
 # AI-KYB Customer Profiling System
 
-**Autonomous Intelligence Pipeline untuk Know Your Business (KYB) & Anti-Money Laundering (AML)**
-
 Sistem profiling perusahaan berbasis AI yang mengotomasi pengumpulan, analisis, dan penilaian risiko nasabah korporat — sesuai regulasi OJK, PPATK, dan standar FATF.
 
 ---

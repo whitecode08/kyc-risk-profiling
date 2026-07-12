@@ -24,15 +24,15 @@ from typing import List, Optional, Union
 from enum import Enum
 
 from pydantic import BaseModel, Field
-from google import genai
-from google.genai import types
+from anthropic import Anthropic
 
 from src.config import (
-    GEMINI_API_KEY, HEAVY_IO_MODEL, COMPLEX_REASONING_MODEL,
-    RISK_WEIGHTS
+    ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL,
+    HEAVY_IO_MODEL, COMPLEX_REASONING_MODEL,
+    RISK_WEIGHTS, extract_text_from_response
 )
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -275,8 +275,8 @@ Salin semua kegiatan usaha dari companyGoals. Tandai is_high_risk=true jika kode
 **Langkah 3 — Ekstrak Shareholders/UBO:**
 - Hitung persentase = (numberOfShares / {paid_up_capital}) × 100
 - Tandai is_ubo=true jika persentase >= 25%
-- Tandai is_corporate=true jika nama dimulai dengan "PT "
-- Urutkan dari persentase terbesar, ambil top 5
+- Tandai is_corporate=true HANYA jika nama DIAWALI dengan "PT " atau "CV " (prefix), atau DIAKHIRI dengan " PT" atau " CV" (suffix). JANGAN tandai is_corporate hanya karena nama mengandung substring "PT" atau "CV" (contoh: "CIPTA", "ACVB" = BUKAN korporasi)
+- Urutkan dari persentase terbesar, jangan dibatasi (masukkan semua pemegang saham ke dalam array)
 
 **Langkah 4 — Analisis 4 Dimensi Risiko:**
 Buat intelligence_data dengan TEPAT 4 dimensi:
@@ -315,10 +315,11 @@ Score adders reference:
 1. risk_contamination_score HARUS = sum(score_breakdown)
 2. Jika PPATK has_active_sanctions=true → aml_risk WAJIB >= 40
 3. Jika ada OFAC/UN hit → aml_risk WAJIB >= 45
-4. Pemegang saham korporasi (PT) → WAJIB spider_web dengan flag CORPORATE_UBO
+4. Pemegang saham korporasi (PT/CV) → WAJIB spider_web dengan flag CORPORATE_UBO
 5. Status TERTUTUP = PT Tertutup, BUKAN risiko
 6. Semua narasi finding dan narrative WAJIB dalam Bahasa Indonesia
 7. Jangan mengarang data yang tidak ada di sumber
+8. PENTING UNTUK LIMITASI TOKEN: Tuliskan semua `finding`, `narrative`, dan `scoring_reasoning` secara SANGAT PADAT dan SINGKAT (maks 1-2 kalimat). Jangan mengulang-ulang data atau bertele-tele agar JSON tidak terpotong (truncated)!
 
 ### FORMAT OUTPUT (JSON SCHEMA)
 Output HARUS 100% valid JSON sesuai dengan skema berikut:
@@ -351,16 +352,26 @@ def ai_researcher(ahu_data: dict, ppatk_summary: dict,
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            response = client.messages.create(
                 model=HEAVY_IO_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.15,
-                ),
+                max_tokens=16000,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.15,
             )
 
-            output = KYBInvestigationOutput.model_validate_json(response.text)
+            raw_text = extract_text_from_response(response)
+
+            # Fail fast if model hit token limit (truncated JSON = invalid)
+            if getattr(response, "stop_reason", None) == "max_tokens":
+                raise ValueError(
+                    "Response truncated (stop_reason=max_tokens). "
+                    "JSON tidak lengkap. Coba lagi dengan output lebih ringkas."
+                )
+            # Strip markdown code fences if present
+            import re
+            raw_text = re.sub(r'^```(?:json)?\s*', '', raw_text.strip())
+            raw_text = re.sub(r'\s*```$', '', raw_text)
+            output = KYBInvestigationOutput.model_validate_json(raw_text)
 
             # Post-process: inject processing time
             elapsed_ms = int(time.time() * 1000) - start_time_ms if start_time_ms else 0
@@ -437,7 +448,7 @@ OSINT: {json.dumps(osint_result, ensure_ascii=False)[:2000]}
 
 4. ✅ Jika PPATK has_active_sanctions=true → aml_risk WAJIB >= 40
 
-5. ✅ Setiap pemegang saham korporasi (nama dimulai "PT ") WAJIB ada di spider_web_analysis
+5. ✅ Setiap pemegang saham korporasi (nama mengandung "PT" atau "CV") WAJIB ada di spider_web_analysis
    dengan risk_flag = CORPORATE_UBO
 
 6. ✅ total_contamination_paths = len(problematic_entities_connected)
@@ -458,7 +469,7 @@ OSINT: {json.dumps(osint_result, ensure_ascii=False)[:2000]}
 
 12. ✅ company_goals harus berisi semua KBLI dari companyGoals AHU
 
-13. ✅ shareholders_ubo harus berisi minimal top 5 pemegang saham
+13. ✅ shareholders_ubo harus berisi SEMUA pemegang saham sesuai data sumber
 
 14. ✅ risk_mitigation TIDAK BOLEH kosong jika action bukan APPROVE
 
@@ -469,19 +480,27 @@ Output HARUS 100% valid JSON sesuai dengan skema berikut:
 ### OUTPUT
 - Jika SEMUA guardrails terpenuhi: is_valid=true, feedback="Laporan memenuhi semua guardrails."
 - Jika ADA yang gagal: is_valid=false, feedback=deskripsi detail masalah, missing_fields=list field bermasalah
+
+PENTING UNTUK LIMITASI TOKEN: Jangan berpikir/beralasan terlalu panjang. Tuliskan output secara PADAT dan SINGKAT agar tidak terpotong (truncated)!
 """
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            response = client.messages.create(
                 model=COMPLEX_REASONING_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                ),
+                max_tokens=8192,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
-            fb = CriticFeedback.model_validate_json(response.text)
+            raw_text = extract_text_from_response(response)
+            
+            if getattr(response, "stop_reason", None) == "max_tokens":
+                raise ValueError("AI Critic truncated (max_tokens).")
+
+            import re
+            raw_text = re.sub(r'^```(?:json)?\s*', '', raw_text.strip())
+            raw_text = re.sub(r'\s*```$', '', raw_text)
+            fb = CriticFeedback.model_validate_json(raw_text)
 
             if fb.is_valid:
                 print("   ✅ Report LULUS validasi guardrails!")

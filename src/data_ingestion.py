@@ -117,21 +117,39 @@ def find_ahu_by_name(company_name: str) -> tuple:
                      f"Perusahaan tersedia: {', '.join(companies.keys()) or 'kosong'}"}, "00"
 
 
+
+
 # ─── UBO Extraction ──────────────────────────────────────────────────────────
 
-def extract_top5_ubo(ahu_data: dict) -> list:
+def _is_corporate_name(name: str) -> bool:
     """
-    Ekstrak Top 5 Pemegang Saham (UBO) berdasarkan numberOfShares.
+    Deteksi apakah nama adalah badan hukum (PT/CV) menggunakan word-boundary.
+
+    Rules (case-insensitive):
+      - Diawali dengan "PT " atau "CV "  → korporasi
+      - Diakhiri dengan " PT" atau " CV" → korporasi
+      Substring match sengaja DIHINDARI untuk mencegah false positive
+      seperti "CIPTA" (mengandung "PT") atau "ACVB" (mengandung "CV").
+    """
+    n = name.strip().upper()
+    prefixes = ("PT ", "CV ")
+    suffixes = (" PT", " CV")
+    return n.startswith(prefixes) or n.endswith(suffixes)
+
+
+def extract_all_ubo(ahu_data: dict) -> list:
+    """
+    Ekstrak Seluruh Pemegang Saham (UBO) berdasarkan numberOfShares.
 
     Framework: "Fungsi ini harus memilah array shareholders, mengurutkannya
-    berdasarkan numberOfShares atau persentase, dan mengembalikan data Top 5
-    Pemegang Saham (UBO) untuk diteruskan ke proses OSINT."
+    berdasarkan numberOfShares atau persentase, dan mengembalikan data Seluruh
+    Pemegang Saham (UBO) untuk diteruskan ke proses OSINT dan dilaporkan."
 
     Args:
         ahu_data: dict profil AHU lengkap
 
     Returns:
-        List of dict (max 5), masing-masing berisi nama, position, shares, percentage
+        List of dict, masing-masing berisi nama, position, shares, percentage
     """
     shareholders = ahu_data.get("shareholders", [])
     paid_up_str = ahu_data.get("paidUpStock", "0")
@@ -161,20 +179,20 @@ def extract_top5_ubo(ahu_data: dict) -> list:
             "percentage": round(pct, 2),
             "address": sh.get("address", ""),
             "country": sh.get("country", "Indonesia"),
-            "is_corporate": sh.get("name", "").upper().startswith("PT "),
+            "is_corporate": _is_corporate_name(sh.get("name", "")),
         })
 
-    # Sort by shares descending, take top 5
+    # Sort by shares descending, do not limit
     parsed.sort(key=lambda x: x["numberOfShares"], reverse=True)
-    top5 = parsed[:5]
+    all_ubo = parsed
 
-    if top5:
-        print(f"   📊 Top 5 UBO:")
-        for i, ubo in enumerate(top5, 1):
+    if all_ubo:
+        print(f"   📊 All UBO / Shareholders:")
+        for i, ubo in enumerate(all_ubo, 1):
             flag = "🏢" if ubo["is_corporate"] else "👤"
             print(f"      {i}. {flag} {ubo['name']} — {ubo['percentage']}% ({ubo['position']})")
 
-    return top5
+    return all_ubo
 
 
 def get_company_metadata(ahu_data: dict) -> dict:
